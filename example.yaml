@@ -6,14 +6,13 @@ metadata:
   label:
     nac: true
 data:
-  git:
+  apply:
     examples:
       repoUrl: https://victoriametrics.github.io/helm-charts/ 
-      auth:
-        secret: 
-          name: test
-          #keyUser: user
-          #keyPass: password
+      authSecret:
+        name: test
+        #keyUser: user
+        #keyPass: password
 
       #path: './'
       #values:

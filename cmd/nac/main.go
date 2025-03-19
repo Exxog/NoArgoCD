@@ -2,9 +2,18 @@ package main
 
 import "fmt"
 
-type GitRepo struct{}
+type AuthSecret struct{
+	name string
+	keyUser string
+	keyPass string
+}
 
-type HelmCart struct{
+type Apply struct{
+	repoUrl string
+	authSecret AuthSecret
+}
+
+type Helm struct{
 	repoUrl string
 	path string
 	targetRevision string
