@@ -5,35 +5,35 @@ import (
 	"time"
 
 	"github.com/Exxog/NoArgoCD/internal/watchers"
-
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
-// Controller gère les dépôts surveillés
-type Controller struct {
+// ControllerGit gère les dépôts GitLab à surveiller
+type ControllerGit struct {
 	watcher *watchers.GitLabWatcher
+	repos   []watchers.GitLabRepo
 }
 
-// NewController crée un nouveau contrôleur avec un watcher
-func NewController(client *gitlab.Client) *Controller {
-	controller := &Controller{}
+// NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
+func NewControllerGit(client *gitlab.Client) *ControllerGit {
+	controller := &ControllerGit{}
 	controller.watcher = watchers.NewGitLabWatcher(controller, client)
 	return controller
 }
 
-// AddRepository ajoute un dépôt à surveiller
-func (c *Controller) AddRepository(url, branch string) {
+// AddRepository ajoute un dépôt GitLab à surveiller
+func (c *ControllerGit) AddRepository(url, branch string) {
 	repo := watchers.GitLabRepo{URL: url, Branch: branch}
 	c.watcher.AddRepository(repo)
 }
 
-// NotifyNewCommit est appelé par le watcher lorsqu'un commit est détecté
-func (c *Controller) NotifyNewCommit(repo watchers.GitLabRepo, commitID string) {
+// NotifyNewCommit est appelé par le watcher lorsqu'un nouveau commit est détecté
+func (c *ControllerGit) NotifyNewCommit(repo watchers.GitLabRepo, commitID string) {
 	fmt.Printf("📝 Nouveau commit sur %s [%s] : %s\n", repo.URL, repo.Branch, commitID)
 }
 
-// StartWatching démarre la surveillance des dépôts
-func (c *Controller) StartWatching(interval time.Duration) {
+// StartWatching démarre la surveillance des dépôts GitLab à intervalles réguliers
+func (c *ControllerGit) StartWatching(interval time.Duration) {
 	fmt.Println("🚀 Démarrage de la surveillance des dépôts GitLab...")
 	c.watcher.Watch(interval)
 }

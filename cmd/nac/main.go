@@ -25,14 +25,26 @@ func main() {
 		log.Fatalf("❌ Impossible de créer le client GitLab : %v", err)
 	}
 
-	// Création du contrôleur
-	controller := controllers.NewController(client)
+	// Création du contrôleur GitLab
+	controllerGit := controllers.NewControllerGit(client)
 
-	// Ajout des dépôts à surveiller
-	controller.AddRepository("https://gitlab.com/gitlab-org/gitlab", "master")
-	controller.AddRepository("https://gitlab.com/gitlab-org/gitlab-runner", "main")
+	// Ajout des dépôts à surveiller dans GitLab
+	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab", "master")
+	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab-runner", "main")
 
-	// Démarrer la surveillance
+	// Démarrer la surveillance des dépôts GitLab
 	interval := 30 * time.Second
-	controller.StartWatching(interval)
+	go controllerGit.StartWatching(interval)
+
+	// Création du contrôleur Kube avec une instance de ControllerGit
+	controllerKube, err := controllers.NewControllerKube(controllerGit)
+	if err != nil {
+		log.Fatalf("❌ Erreur lors de la création du contrôleur Kube : %v", err)
+	}
+
+	// Démarrer la surveillance des ConfigMaps dans Kubernetes (dans le namespace "default")
+	go controllerKube.StartWatcher("default")
+
+	// Garder l'application active pour tester
+	select {}
 }

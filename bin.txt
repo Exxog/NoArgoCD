@@ -1,3 +1,26 @@
+
+
+
+func RunControllerKubeTest() {
+	// Créer un ControllerGit pour tester
+	gitController := NewControllerGit()
+
+	// Créer un ControllerKube
+	kubeController, err := NewControllerKube(gitController)
+	if err != nil {
+		log.Fatalf("❌ Erreur lors de la création du contrôleur Kube : %v", err)
+	}
+
+	// Lancer le watcher de ConfigMaps dans le namespace "default" (ou autre si nécessaire)
+	kubeController.StartWatcher("default")
+
+	// Garder l'application active pour tester
+	select {}
+}
+
+
+
+
 package main
 
 import (

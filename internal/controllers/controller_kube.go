@@ -2,20 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/Exxog/NoArgoCD/internal/watchers"
 )
-
-// ControllerGit représente le contrôleur qui gère les dépôts GitLab à surveiller
-type ControllerGit struct {
-	repos []watchers.GitLabRepo // Utilise le type GitLabRepo du watcher
-}
-
-// NewControllerGit crée une nouvelle instance de ControllerGit
-func NewControllerGit() *ControllerGit {
-	return &ControllerGit{}
-}
 
 // UpdateRepos met à jour les repos surveillés dans ControllerGit
 func (c *ControllerGit) UpdateRepos(repos []watchers.GitLabRepo) {
@@ -63,19 +52,3 @@ func (c *ControllerKube) onConfigMapUpdate(newRepos []watchers.GitLabRepo) {
 }
 
 // Fonction pour tester directement le ControllerKube sans passer par main.go
-func RunControllerKubeTest() {
-	// Créer un ControllerGit pour tester
-	gitController := NewControllerGit()
-
-	// Créer un ControllerKube
-	kubeController, err := NewControllerKube(gitController)
-	if err != nil {
-		log.Fatalf("❌ Erreur lors de la création du contrôleur Kube : %v", err)
-	}
-
-	// Lancer le watcher de ConfigMaps dans le namespace "default" (ou autre si nécessaire)
-	kubeController.StartWatcher("default")
-
-	// Garder l'application active pour tester
-	select {}
-}
