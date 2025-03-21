@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -57,15 +58,29 @@ func setupKubernetesClient() (*kubernetes.Clientset, error) {
 
 	return clientset, nil
 }
+func containsKey(dataMap map[string]interface{}, key string) bool {
+	_, exists := dataMap[key]
+	return exists
+}
+func getFirstKey(dataMap map[string]interface{}) string {
+	// On parcourt toutes les clés du dictionnaire
+	for key := range dataMap {
+		return key // On retourne la première clé trouvée
+	}
+	// Si aucune clé n'est trouvée, retourner une chaîne vide
+	return ""
+}
 
 // Watch surveille les ConfigMaps dans un namespace donné
-func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func([]GitLabRepo)) {
+func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap)) {
 	// Surveille les ConfigMaps dans le namespace spécifié
 	fmt.Printf("🔍 Surveillance des ConfigMaps dans le namespace '%s'...\n", namespace)
 
 	// Utilisation d'un Watcher Kubernetes pour surveiller les ConfigMaps
 	// Ajout du contexte ici
-	watchInterface, err := w.clientset.CoreV1().ConfigMaps(namespace).Watch(context.TODO(), metav1.ListOptions{})
+	watchInterface, err := w.clientset.CoreV1().ConfigMaps(namespace).Watch(context.TODO(), metav1.ListOptions{
+		LabelSelector: "nac=true",
+	})
 	if err != nil {
 		log.Fatalf("❌ Erreur lors de la surveillance des ConfigMaps : %v", err)
 	}
@@ -74,11 +89,40 @@ func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func([]GitLabRepo)) 
 	for event := range watchInterface.ResultChan() {
 		// Correction ici : cast vers *v1.ConfigMap pour obtenir son nom
 		fmt.Printf("Événement détecté : %v, ConfigMap: %s\n", event.Type, event.Object.(*v1.ConfigMap).Name)
+		configMap := event.Object.(*v1.ConfigMap)
 		switch event.Type {
-		case "ADDED", "MODIFIED", "DELETED":
+		case "MODIFIED", "DELETED":
 			fmt.Println("🛠️ Mise à jour détectée sur un ConfigMap : ", event.Type)
 			// Ici, tu peux ajouter la logique pour extraire les informations des ConfigMaps et les envoyer à onUpdate
-			// Exemple : onUpdate([GitLabRepo{...}, ...])
+		case "ADDED":
+			fmt.Println("🛠️ Mise à jour détectée sur un ConfigMap : ", event.Type)
+			for key, value := range configMap.Data {
+				fmt.Printf("Clé: %s, Valeur: %s\n", key, value)
+				var dataMap map[string]interface{}
+
+				// Désérialisation du YAML dans la map
+				err := yaml.Unmarshal([]byte(value), &dataMap)
+				if err != nil {
+					fmt.Println("Erreur lors de la désérialisation de la clé", key, ":", err)
+					continue
+				}
+
+				// Utilisation d'un switch pour vérifier la valeur de chaque clé
+				switch getFirstKey(dataMap) {
+
+				case "helm":
+					fmt.Printf("➡️ La clé '%s' contient 'helm'.\n", key)
+					// Traitement spécifique pour 'helm'
+					fmt.Println("A") // Exemple de traitement pour 'helm'
+					onUpdate(configMap)
+				case "apply":
+					fmt.Printf("➡️ La clé '%s' contient 'apply'.\n", key)
+					// Traitement spécifique pour 'apply'
+					fmt.Println("C") // Exemple de traitement pour 'apply'
+				default:
+					fmt.Printf("➡️ La clé '%s' ne contient ni 'helm', ni 'toto', ni 'apply'.\n", key)
+				}
+			}
 		default:
 			// Log pour afficher d'autres types d'événements qui pourraient se produire
 			fmt.Println("Événement non traité:", event.Type)

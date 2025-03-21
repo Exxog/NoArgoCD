@@ -3,11 +3,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: deploy-sup
-  label:
-    nac: true
+  labels:
+    nac: "true"
 data:
-  helm:
-    victoria-metrics:
+  bootstrap: |
+    helm:
       repoUrl: https://victoriametrics.github.io/helm-charts/ 
       #chart: 
       #path: './'

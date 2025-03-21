@@ -39,6 +39,11 @@ func NewGitLabWatcher(controller Watcher, client *gitlab.Client) *GitLabWatcher 
 func (w *GitLabWatcher) AddRepository(repo GitLabRepo) {
 	w.repositories = append(w.repositories, repo)
 	fmt.Printf("📌 Dépôt ajouté : %s (%s)\n", repo.URL, repo.Branch)
+	fmt.Println(w.repositories)
+}
+
+func checkrepo() {
+
 }
 
 // Watch lance la surveillance des dépôts GitLab

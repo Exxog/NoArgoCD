@@ -3,11 +3,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: bootstrap
-  label:
-    nac: true
+  labels:
+    nac: "true"
 data:
-  apply:
-    examples:
+  examples:
+    apply:
       repoUrl: https://victoriametrics.github.io/helm-charts/ 
       authSecret:
         name: test

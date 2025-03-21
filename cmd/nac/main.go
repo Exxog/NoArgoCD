@@ -27,9 +27,10 @@ func main() {
 
 	// Création du contrôleur GitLab
 	controllerGit := controllers.NewControllerGit(client)
+	controllerHelm := controllers.NewControllerHelm(controllerGit)
 
 	// Ajout des dépôts à surveiller dans GitLab
-	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab", "master")
+	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab-runner", "main")
 	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab-runner", "main")
 
 	// Démarrer la surveillance des dépôts GitLab
@@ -37,7 +38,7 @@ func main() {
 	go controllerGit.StartWatching(interval)
 
 	// Création du contrôleur Kube avec une instance de ControllerGit
-	controllerKube, err := controllers.NewControllerKube(controllerGit)
+	controllerKube, err := controllers.NewControllerKube(controllerHelm)
 	if err != nil {
 		log.Fatalf("❌ Erreur lors de la création du contrôleur Kube : %v", err)
 	}
