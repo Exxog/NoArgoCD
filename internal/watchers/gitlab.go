@@ -42,8 +42,33 @@ func (w *GitLabWatcher) AddRepository(repo GitLabRepo) {
 	fmt.Println(w.repositories)
 }
 
-func checkrepo() {
+func (w *GitLabWatcher) CheckRepo(repo GitLabRepo, commitHistory map[string]string) {
+	// Récupérer l'ID du projet et la visibilité à partir de l'URL
+	projectID, err := getGitLabProjectID(w.client, repo.URL)
+	if err != nil {
+		log.Printf("❌ Erreur récupération projet %s : %v\n", repo.URL, err)
+		return
+	}
 
+	// Récupérer les commits du dépôt
+	commits, _, err := w.client.Commits.ListCommits(projectID, &gitlab.ListCommitsOptions{
+		RefName: &repo.Branch,
+	})
+	if err != nil {
+		log.Printf("❌ Erreur commits %s [%s] : %v\n", repo.URL, repo.Branch, err)
+		return
+	}
+
+	// Vérifier s'il y a un nouveau commit
+	if len(commits) > 0 {
+		latestCommit := commits[0].ID
+		if commitHistory[repo.URL] != latestCommit {
+			w.controller.NotifyNewCommit(repo, latestCommit)
+			commitHistory[repo.URL] = latestCommit
+		}
+	} else {
+		log.Printf("⚠️ Aucun commit trouvé pour %s [%s]\n", repo.URL, repo.Branch)
+	}
 }
 
 // Watch lance la surveillance des dépôts GitLab
@@ -52,35 +77,11 @@ func (w *GitLabWatcher) Watch(interval time.Duration) {
 
 	for {
 		for _, repo := range w.repositories {
-			// Récupérer l'ID du projet et la visibilité à partir de l'URL
-			projectID, err := getGitLabProjectID(w.client, repo.URL)
-			if err != nil {
-				log.Printf("❌ Erreur récupération projet %s : %v\n", repo.URL, err)
-				continue
-			}
-
-			// Récupérer les commits du dépôt
-			commits, _, err := w.client.Commits.ListCommits(projectID, &gitlab.ListCommitsOptions{
-				RefName: &repo.Branch,
-			})
-			if err != nil {
-				log.Printf("❌ Erreur commits %s [%s] : %v\n", repo.URL, repo.Branch, err)
-				continue
-			}
-
-			// Vérifier s'il y a un nouveau commit
-			if len(commits) > 0 {
-				latestCommit := commits[0].ID
-				if commitHistory[repo.URL] != latestCommit {
-					w.controller.NotifyNewCommit(repo, latestCommit)
-					commitHistory[repo.URL] = latestCommit
-				}
-			} else {
-				log.Printf("⚠️ Aucun commit trouvé pour %s [%s]\n", repo.URL, repo.Branch)
-			}
+			w.CheckRepo(repo, commitHistory)
 		}
 		time.Sleep(interval)
 	}
+
 }
 
 // getGitLabProjectID récupère l'ID d'un projet GitLab depuis son URL

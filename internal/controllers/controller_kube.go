@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Exxog/NoArgoCD/internal/watchers"
+	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -46,11 +47,48 @@ func (c *ControllerKube) StartWatcher(namespace string) {
 	}()
 }
 
+func getFirstKey(dataMap map[string]interface{}) string {
+	// On parcourt toutes les clés du dictionnaire
+	for key := range dataMap {
+		return key // On retourne la première clé trouvée
+	}
+	// Si aucune clé n'est trouvée, retourner une chaîne vide
+	return ""
+}
+
 // Callback exécutée lors d'une mise à jour de ConfigMap
 func (c *ControllerKube) onConfigMapUpdate(cm *v1.ConfigMap) {
 	fmt.Println("⚡ Mise à jour des dépôts GitLab à partir des ConfigMaps Kubernetes !")
-	// Le ControllerGit reçoit la mise à jour des dépôts à surveiller
-	c.helmController.Add(cm)
+	//TODO filter sur le helm pour diriger vers le bon controller
+	//c.helmController.AddCM(cm)
+	for key, value := range cm.Data {
+		fmt.Printf("Clé: %s, Valeur: %s\n", key, value)
+		var dataMap map[string]interface{}
+
+		// Désérialisation du YAML dans la map
+		err := yaml.Unmarshal([]byte(value), &dataMap)
+		if err != nil {
+			fmt.Println("Erreur lors de la désérialisation de la clé", key, ":", err)
+			continue
+		}
+
+		// Utilisation d'un switch pour vérifier la valeur de chaque clé
+		switch getFirstKey(dataMap) {
+
+		case "helm":
+			fmt.Printf("➡️ La clé '%s' contient 'helm'.\n", key)
+			// Traitement spécifique pour 'helm'
+			fmt.Println("A") // Exemple de traitement pour 'helm'
+			c.helmController.Add(dataMap)
+		case "apply":
+			fmt.Printf("➡️ La clé '%s' contient 'helm'.\n", key)
+			// Traitement spécifique pour 'helm'
+			fmt.Println("A") // Exemple de traitement pour 'helm'
+
+		default:
+			fmt.Printf("➡️ La clé '%s' ne contient ni 'helm', ni 'toto', ni 'apply'.\n", key)
+		}
+	}
 }
 
 // Fonction pour tester directement le ControllerKube sans passer par main.go

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -62,14 +61,6 @@ func containsKey(dataMap map[string]interface{}, key string) bool {
 	_, exists := dataMap[key]
 	return exists
 }
-func getFirstKey(dataMap map[string]interface{}) string {
-	// On parcourt toutes les clés du dictionnaire
-	for key := range dataMap {
-		return key // On retourne la première clé trouvée
-	}
-	// Si aucune clé n'est trouvée, retourner une chaîne vide
-	return ""
-}
 
 // Watch surveille les ConfigMaps dans un namespace donné
 func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap)) {
@@ -96,33 +87,8 @@ func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap))
 			// Ici, tu peux ajouter la logique pour extraire les informations des ConfigMaps et les envoyer à onUpdate
 		case "ADDED":
 			fmt.Println("🛠️ Mise à jour détectée sur un ConfigMap : ", event.Type)
-			for key, value := range configMap.Data {
-				fmt.Printf("Clé: %s, Valeur: %s\n", key, value)
-				var dataMap map[string]interface{}
+			onUpdate(configMap)
 
-				// Désérialisation du YAML dans la map
-				err := yaml.Unmarshal([]byte(value), &dataMap)
-				if err != nil {
-					fmt.Println("Erreur lors de la désérialisation de la clé", key, ":", err)
-					continue
-				}
-
-				// Utilisation d'un switch pour vérifier la valeur de chaque clé
-				switch getFirstKey(dataMap) {
-
-				case "helm":
-					fmt.Printf("➡️ La clé '%s' contient 'helm'.\n", key)
-					// Traitement spécifique pour 'helm'
-					fmt.Println("A") // Exemple de traitement pour 'helm'
-					onUpdate(configMap)
-				case "apply":
-					fmt.Printf("➡️ La clé '%s' contient 'apply'.\n", key)
-					// Traitement spécifique pour 'apply'
-					fmt.Println("C") // Exemple de traitement pour 'apply'
-				default:
-					fmt.Printf("➡️ La clé '%s' ne contient ni 'helm', ni 'toto', ni 'apply'.\n", key)
-				}
-			}
 		default:
 			// Log pour afficher d'autres types d'événements qui pourraient se produire
 			fmt.Println("Événement non traité:", event.Type)

@@ -7,15 +7,35 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+type chartHelm struct {
+	repoUrl    string
+	path       string
+	name       string
+	chart      string
+	revision   string
+	authSecret struct {
+	}
+	values map[string]interface{}
+}
+
 // ControllerGit gère les dépôts GitLab à surveiller
 type ControllerHelm struct {
 	gitController *ControllerGit
 	repos         []watchers.GitLabRepo
 }
 
-func (c *ControllerHelm) Add(cm *v1.ConfigMap) {
+func (c *ControllerHelm) AddCM(cm *v1.ConfigMap) {
 	fmt.Println("🔄 ADD CM")
 	c.gitController.AddRepository("https://gitlab.com/gitlab-org/gitlab", "master")
+
+}
+func (c *ControllerHelm) Add(helm map[string]any) {
+	fmt.Println("🔄 ADD HELM")
+	fmt.Println(helm["helm"])
+	repoURL := helm["helm"].(map[interface{}]interface{})["repoUrl"]
+	targetRevision := helm["helm"].(map[interface{}]interface{})["targetRevision"]
+
+	c.gitController.AddRepository(repoURL.(string), targetRevision.(string))
 
 }
 

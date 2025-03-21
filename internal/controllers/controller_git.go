@@ -25,6 +25,7 @@ func NewControllerGit(client *gitlab.Client) *ControllerGit {
 func (c *ControllerGit) AddRepository(url, branch string) {
 	repo := watchers.GitLabRepo{URL: url, Branch: branch}
 	c.watcher.AddRepository(repo)
+
 }
 
 // NotifyNewCommit est appelé par le watcher lorsqu'un nouveau commit est détecté

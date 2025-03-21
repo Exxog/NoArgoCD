@@ -8,7 +8,8 @@ metadata:
 data:
   bootstrap: |
     helm:
-      repoUrl: https://victoriametrics.github.io/helm-charts/ 
+      repoUrl: https://gitlab.com/gitlab-org/charts/gitlab
+      targetRevision: master
       #chart: 
       #path: './'
       values:
