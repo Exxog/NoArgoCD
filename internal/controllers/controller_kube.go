@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 
+	"github.com/Exxog/NoArgoCD/internal/utils"
 	"github.com/Exxog/NoArgoCD/internal/watchers"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
@@ -12,7 +13,6 @@ import (
 func (c *ControllerGit) UpdateRepos(repos []watchers.GitLabRepo) {
 	fmt.Println("🔄 Mise à jour des dépôts GitLab à surveiller")
 	c.repos = repos
-	c.AddRepository("toto", "main")
 	// Ici, tu peux lancer le watcher GitLab pour surveiller les nouveaux repos
 	// c.startWatching() - Exemple, si tu as une méthode pour commencer à surveiller les repos
 }
@@ -39,12 +39,11 @@ func NewControllerKube(helmController *ControllerHelm) (*ControllerKube, error) 
 }
 
 // StartWatcher démarre la surveillance des ConfigMaps dans un namespace
-func (c *ControllerKube) StartWatcher(namespace string) {
+func (c *ControllerKube) StartWatching(namespace string) {
+	namespace = utils.GetNamespace(namespace)
 	// Lancer la surveillance dans une nouvelle goroutine
-	go func() {
-		fmt.Println("🎯 Démarrage de la surveillance des ConfigMaps dans le namespace :", namespace)
-		c.watcher.Watch(namespace, c.onConfigMapUpdate)
-	}()
+	fmt.Println("🎯 Démarrage de la surveillance des ConfigMaps dans le namespace :", namespace)
+	c.watcher.Watch(namespace, c.onConfigMapUpdate)
 }
 
 func getFirstKey(dataMap map[string]interface{}) string {
@@ -79,7 +78,7 @@ func (c *ControllerKube) onConfigMapUpdate(cm *v1.ConfigMap) {
 			fmt.Printf("➡️ La clé '%s' contient 'helm'.\n", key)
 			// Traitement spécifique pour 'helm'
 			fmt.Println("A") // Exemple de traitement pour 'helm'
-			c.helmController.Add(dataMap)
+			c.helmController.DetectHelmChartFromCM(dataMap)
 		case "apply":
 			fmt.Printf("➡️ La clé '%s' contient 'helm'.\n", key)
 			// Traitement spécifique pour 'helm'

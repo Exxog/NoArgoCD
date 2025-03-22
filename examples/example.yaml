@@ -2,16 +2,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: deploy-sup
+  name: bootstrap
   labels:
     nac: "true"
 data:
   bootstrap: |
     helm:
-      repoUrl: https://gitlab.com/gitlab-org/charts/gitlab
-      targetRevision: master
+      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
+      path: bootstrapForNac/ 
+      targetRevision: main
       #chart: 
       #path: './'
       values:
         test: a
-

@@ -3,8 +3,9 @@ package controllers
 import (
 	"fmt"
 
+	"github.com/Exxog/NoArgoCD/internal/getters"
+	"github.com/Exxog/NoArgoCD/internal/utils"
 	"github.com/Exxog/NoArgoCD/internal/watchers"
-	v1 "k8s.io/api/core/v1"
 )
 
 type chartHelm struct {
@@ -24,12 +25,15 @@ type ControllerHelm struct {
 	repos         []watchers.GitLabRepo
 }
 
-func (c *ControllerHelm) AddCM(cm *v1.ConfigMap) {
-	fmt.Println("🔄 ADD CM")
-	c.gitController.AddRepository("https://gitlab.com/gitlab-org/gitlab", "master")
-
+// NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
+func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
+	controller := &ControllerHelm{
+		gitController: gitController,
+	}
+	return controller
 }
-func (c *ControllerHelm) Add(helm map[string]any) {
+
+func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any) {
 	fmt.Println("🔄 ADD HELM")
 	fmt.Println(helm["helm"])
 	repoURL := helm["helm"].(map[interface{}]interface{})["repoUrl"]
@@ -39,13 +43,29 @@ func (c *ControllerHelm) Add(helm map[string]any) {
 
 }
 
-// NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
-func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
-	controller := &ControllerHelm{
-		gitController: gitController,
-	}
-	return controller
+func installHelmChartFromGit(repo watchers.GitLabRepo, chartPath, releaseName, namespace string) {
+	namespace = utils.GetNamespace(namespace)
+	println(repo.URL)
+	utils.CloneOrUpdateRepo(repo.URL, "/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", "")
+	utils.DeployOrUpdateHelmChartViaCmd("/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch)+"/"+chartPath, releaseName, namespace, "")
 }
+
+func (c *ControllerHelm) InstallHelmChart(repo watchers.GitLabRepo) {
+	helmCharts := getters.GetHelm(repo.URL, repo.Branch)
+
+	for key, charts := range helmCharts {
+		for _, chart := range charts {
+			if repoURL, ok := chart["repoUrl"].(string); ok {
+				fmt.Printf("🔹 Clé: %s, Repo URL: %s\n", key, repoURL)
+				installHelmChartFromGit(repo, chart["path"].(string), key, "")
+
+			}
+		}
+	}
+
+}
+
+//faire un retry si helm marche pas ?
 
 // AddRepository ajoute un dépôt GitLab à surveiller
 func (c *ControllerHelm) AddConfigMap(url, branch string) {

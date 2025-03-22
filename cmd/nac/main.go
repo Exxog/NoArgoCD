@@ -26,12 +26,12 @@ func main() {
 	}
 
 	// Création du contrôleur GitLab
-	controllerGit := controllers.NewControllerGit(client)
+
+	controllerGit := controllers.NewControllerGit(client, nil)
 	controllerHelm := controllers.NewControllerHelm(controllerGit)
+	controllerGit.SetHelmController(controllerHelm)
 
 	// Ajout des dépôts à surveiller dans GitLab
-	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab-runner", "main")
-	controllerGit.AddRepository("https://gitlab.com/gitlab-org/gitlab-runner", "main")
 
 	// Démarrer la surveillance des dépôts GitLab
 	interval := 30 * time.Second
@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// Démarrer la surveillance des ConfigMaps dans Kubernetes (dans le namespace "default")
-	go controllerKube.StartWatcher("default")
+	go controllerKube.StartWatching("")
 
 	// Garder l'application active pour tester
 	select {}
