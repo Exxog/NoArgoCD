@@ -42,7 +42,7 @@ func NewControllerKube(helmController *ControllerHelm) (*ControllerKube, error) 
 func (c *ControllerKube) StartWatching(namespace string) {
 	namespace = utils.GetNamespace(namespace)
 	// Lancer la surveillance dans une nouvelle goroutine
-	fmt.Println("🎯 Démarrage de la surveillance des ConfigMaps dans le namespace :", namespace)
+	fmt.Println("🔍 Démarrage de la surveillance des ConfigMaps dans le namespace :", namespace)
 	c.watcher.Watch(namespace, c.onConfigMapUpdate)
 }
 
@@ -61,7 +61,7 @@ func (c *ControllerKube) onConfigMapUpdate(cm *v1.ConfigMap) {
 	//TODO filter sur le helm pour diriger vers le bon controller
 	//c.helmController.AddCM(cm)
 	for key, value := range cm.Data {
-		fmt.Printf("Clé: %s, Valeur: %s\n", key, value)
+		//fmt.Printf("Clé: %s, Valeur: %s\n", key, value)
 		var dataMap map[string]interface{}
 
 		// Désérialisation du YAML dans la map

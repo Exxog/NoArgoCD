@@ -53,14 +53,14 @@ func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap))
 		// Le watcher observe les événements et appelle onUpdate chaque fois qu'un événement survient
 		for event := range watchInterface.ResultChan() {
 			// Correction ici : cast vers *v1.ConfigMap pour obtenir son nom
-			fmt.Printf("Événement détecté : %v, ConfigMap: %s\n", event.Type, event.Object.(*v1.ConfigMap).Name)
+			fmt.Printf("📝 Événement détecté : %v, ConfigMap: %s\n", event.Type, event.Object.(*v1.ConfigMap).Name)
 			configMap := event.Object.(*v1.ConfigMap)
 			switch event.Type {
 			case "MODIFIED", "DELETED":
-				fmt.Println("🛠️ Mise à jour détectée sur un ConfigMap : ", event.Type)
+				fmt.Println("🛠📝️ Mise à jour détectée sur un ConfigMap : ", event.Type)
 				// Ici, tu peux ajouter la logique pour extraire les informations des ConfigMaps et les envoyer à onUpdate
 			case "ADDED":
-				fmt.Println("🛠️ Mise à jour détectée sur un ConfigMap : ", event.Type)
+				fmt.Println("🛠️📝 Mise à jour détectée sur un ConfigMap : ", event.Type)
 				onUpdate(configMap)
 
 			default:

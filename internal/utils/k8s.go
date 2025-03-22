@@ -59,7 +59,7 @@ func GetNamespace(namespace string) string {
 		data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 		if err != nil {
 			// Si la lecture échoue, utiliser "default" comme namespace
-			fmt.Println("Erreur lors de la lecture du namespace du fichier, utilisation du namespace par défaut.")
+			fmt.Println("⚠️ Erreur lors de la lecture du namespace du fichier, utilisation du namespace par défaut.")
 			return "default"
 		}
 		// Si la lecture est réussie, retourner la valeur lue dans le fichier
