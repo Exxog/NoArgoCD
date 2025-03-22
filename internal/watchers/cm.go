@@ -39,7 +39,7 @@ func containsKey(dataMap map[string]interface{}, key string) bool {
 func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap)) {
 	for {
 		// Surveille les ConfigMaps dans le namespace spécifié
-		fmt.Printf("🔍 Surveillance des ConfigMaps dans le namespace '%s'...\n", namespace)
+		fmt.Printf("[watchers][cm]🔍 Surveillance des ConfigMaps dans le namespace '%s'...\n", namespace)
 
 		// Utilisation d'un Watcher Kubernetes pour surveiller les ConfigMaps
 		// Ajout du contexte ici
@@ -47,25 +47,25 @@ func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap))
 			LabelSelector: "nac=true",
 		})
 		if err != nil {
-			log.Fatalf("❌ Erreur lors de la surveillance des ConfigMaps : %v", err)
+			log.Fatalf("[watchers][cm]❌ Erreur lors de la surveillance des ConfigMaps : %v", err)
 		}
 
 		// Le watcher observe les événements et appelle onUpdate chaque fois qu'un événement survient
 		for event := range watchInterface.ResultChan() {
 			// Correction ici : cast vers *v1.ConfigMap pour obtenir son nom
-			fmt.Printf("📝 Événement détecté : %v, ConfigMap: %s\n", event.Type, event.Object.(*v1.ConfigMap).Name)
+			fmt.Printf("[watchers][cm]📝 Événement détecté : %v, ConfigMap: %s\n", event.Type, event.Object.(*v1.ConfigMap).Name)
 			configMap := event.Object.(*v1.ConfigMap)
 			switch event.Type {
 			case "MODIFIED", "DELETED":
-				fmt.Println("🛠📝️ Mise à jour détectée sur un ConfigMap : ", event.Type)
+				fmt.Println("[watchers][cm]🛠📝️ Mise à jour détectée sur un ConfigMap : ", event.Type)
 				// Ici, tu peux ajouter la logique pour extraire les informations des ConfigMaps et les envoyer à onUpdate
 			case "ADDED":
-				fmt.Println("🛠️📝 Mise à jour détectée sur un ConfigMap : ", event.Type)
+				fmt.Println("[watchers][cm]🛠️📝 Mise à jour détectée sur un ConfigMap : ", event.Type)
 				onUpdate(configMap)
 
 			default:
 				// Log pour afficher d'autres types d'événements qui pourraient se produire
-				fmt.Println("Événement non traité:", event.Type)
+				fmt.Println("[watchers][cm]Événement non traité:", event.Type)
 			}
 		}
 

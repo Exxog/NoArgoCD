@@ -38,7 +38,7 @@ func NewGitLabWatcher(controller Watcher, client *gitlab.Client) *GitLabWatcher 
 // AddRepository permet d'ajouter un dépôt à surveiller
 func (w *GitLabWatcher) AddRepository(repo GitLabRepo) {
 	w.repositories = append(w.repositories, repo)
-	fmt.Printf("📌 Dépôt ajouté : %s (%s)\n", repo.URL, repo.Branch)
+	fmt.Printf("[watchers][gitlab] 📌 Dépôt ajouté : %s (%s)\n", repo.URL, repo.Branch)
 	fmt.Println(w.repositories)
 }
 
@@ -46,7 +46,7 @@ func (w *GitLabWatcher) CheckRepo(repo GitLabRepo, commitHistory map[string]stri
 	// Récupérer l'ID du projet et la visibilité à partir de l'URL
 	projectID, err := getGitLabProjectID(w.client, repo.URL)
 	if err != nil {
-		log.Printf("❌ Erreur récupération projet %s : %v\n", repo.URL, err)
+		log.Printf("[watchers][gitlab] ❌ Erreur récupération projet %s : %v\n", repo.URL, err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (w *GitLabWatcher) CheckRepo(repo GitLabRepo, commitHistory map[string]stri
 		RefName: &repo.Branch,
 	})
 	if err != nil {
-		log.Printf("❌ Erreur commits %s [%s] : %v\n", repo.URL, repo.Branch, err)
+		log.Printf("[watchers][gitlab]❌ Erreur commits %s [%s] : %v\n", repo.URL, repo.Branch, err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (w *GitLabWatcher) CheckRepo(repo GitLabRepo, commitHistory map[string]stri
 			commitHistory[repo.URL] = latestCommit
 		}
 	} else {
-		log.Printf("⚠️ Aucun commit trouvé pour %s [%s]\n", repo.URL, repo.Branch)
+		log.Printf("[watchers][gitlab]⚠️ Aucun commit trouvé pour %s [%s]\n", repo.URL, repo.Branch)
 	}
 }
 
@@ -88,12 +88,12 @@ func (w *GitLabWatcher) Watch(interval time.Duration) {
 func getGitLabProjectID(client *gitlab.Client, url string) (string, error) {
 	parts := strings.Split(url, "/")
 	if len(parts) < 5 {
-		return "", fmt.Errorf("URL GitLab invalide : %s", url)
+		return "", fmt.Errorf("[watchers][gitlab] URL GitLab invalide : %s", url)
 	}
 	projectName := strings.Join(parts[len(parts)-2:], "/")
 	project, _, err := client.Projects.GetProject(projectName, nil)
 	if err != nil {
-		return "", fmt.Errorf("projet non trouvé : %v", err)
+		return "", fmt.Errorf("[watchers][gitlab] projet non trouvé : %v", err)
 	}
 	return fmt.Sprintf("%d", project.ID), nil
 }
