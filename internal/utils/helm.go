@@ -1,77 +1,22 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
-	"time"
+	"strings"
 
 	"github.com/google/uuid"
 	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/release"
 )
 
-func WriteValuesFile(filePath, content string) error {
-	if content == "" {
-		return nil // Pas de valeurs à écrire, on passe
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("❌ Erreur lors de la création du fichier values.yaml: %v", err)
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(content)
-	if err != nil {
-		return fmt.Errorf("❌ Erreur lors de l'écriture dans values.yaml: %v", err)
-	}
-
-	fmt.Println("📄 Fichier values.yaml généré:", filePath)
-	return nil
-}
-
-func DeployOrUpdateHelmChartViaCmdOLD(chartPath, releaseName, namespace string, valuesYaml string) error {
-	// Tentative infinie
-	for {
-		// 1. Mettre à jour les dépendances du chart avec helm dependency update
-		cmd := exec.Command("helm", "dependency", "update", chartPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		fmt.Println("[utils][helm] 📦 Mise à jour des dépendances...")
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("[utils][helm] ❌ Erreur lors de la mise à jour des dépendances du chart: %v\n", err)
-			// Attendre 30 secondes avant de réessayer
-			fmt.Println("[utils][helm]⏳ Tentative après 30 secondes...")
-			time.Sleep(30 * time.Second)
-			continue // Réessayer
-		}
-
-		// 2. Déployer ou mettre à jour le chart avec helm upgrade --install
-		fmt.Println("🚀 Déploiement ou mise à jour du chart...")
-		upgradeCmd := exec.Command("helm", "upgrade", "--install", releaseName, chartPath, "--namespace", namespace, "--force", "-f", valuesYaml)
-		upgradeCmd.Stdout = os.Stdout
-		upgradeCmd.Stderr = os.Stderr
-		if err := upgradeCmd.Run(); err != nil {
-			fmt.Printf("[utils][helm] ❌ Erreur lors de l'installation ou de la mise à jour du chart: %v\n", err)
-			// Attendre 30 secondes avant de réessayer
-			fmt.Println("[utils][helm] ⏳ Tentative après 30 secondes...")
-			time.Sleep(30 * time.Second)
-			continue // Réessayer
-		}
-
-		// Si tout s'est bien passé
-		fmt.Println("✅ Déploiement réussi!")
-		return nil
-	}
-}
-
-func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace, valuesYamlContent string) error {
+func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, valuesYamlContent []byte) error {
 	valuesFilePath := "/tmp/nac" + uuid.New().String() // Chemin temporaire pour le fichier YAML
-
 	// Si des valeurs sont fournies, on les écrit dans values.yaml
-	if err := WriteValuesFile(valuesFilePath, valuesYamlContent); err != nil {
+	if err := WriteYAMLToFile(valuesFilePath, valuesYamlContent); err != nil {
 		return err
 	}
 
@@ -79,62 +24,40 @@ func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace, valuesYaml
 	cmd := exec.Command("helm", "dependency", "update", chartPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	fmt.Println("📦 Mise à jour des dépendances...")
+	fmt.Println("[utils][helm] 📦 Mise à jour des dépendances...")
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("❌ Erreur lors de la mise à jour des dépendances du chart: %v", err)
+		return fmt.Errorf("[utils][helm]❌ Erreur lors de la mise à jour des dépendances du chart: %v", err)
 	}
 
 	// 2. Construire la commande `helm upgrade --install`
-	fmt.Println("🚀 Déploiement ou mise à jour du chart...")
+	fmt.Println("[utils][helm]🚀 Déploiement ou mise à jour du chart...")
 	upgradeCmd := []string{
 		"upgrade", "--install", releaseName, chartPath,
 		"--namespace", namespace, "--force",
 	}
 
 	// Ajouter le fichier `values.yaml` seulement s'il a été généré
-	if valuesYamlContent != "" {
+	if len(valuesYamlContent) != 0 {
 		upgradeCmd = append(upgradeCmd, "-f", valuesFilePath)
 	}
 	fmt.Println(upgradeCmd)
 	cmd = exec.Command("helm", upgradeCmd...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	//if len(valuesYamlContent) != 0 {
+	//	if err := os.Remove(valuesFilePath); err != nil {
+	//		fmt.Printf("[utils][helm]⚠️ Impossible de supprimer le fichier temporaire %s: %v\n", valuesFilePath, err)
+	//	} else {
+	//		fmt.Println("[utils][helm] 🗑️ Fichier values.yaml supprimé:", valuesFilePath)
+	//	}
+	//}
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("❌ Erreur lors de l'installation ou de la mise à jour du chart: %v", err)
+	if err != nil {
+		return fmt.Errorf("[utils][helm]❌ Erreur lors de l'installation ou de la mise à jour du chart: %v", err)
 	}
 
-	if valuesYamlContent != "" {
-		if err := os.Remove(valuesFilePath); err != nil {
-			fmt.Printf("⚠️ Impossible de supprimer le fichier temporaire %s: %v\n", valuesFilePath, err)
-		} else {
-			fmt.Println("🗑️ Fichier values.yaml supprimé:", valuesFilePath)
-		}
-	}
-	fmt.Println("✅ Déploiement réussi!")
-	return nil
-}
-
-func DeployOrUpdateHelmChartViaCmdOLD2(chartPath, releaseName, namespace string, valuesYaml string) error {
-	// 1. Mettre à jour les dépendances du chart avec helm dependency update
-	cmd := exec.Command("helm", "dependency", "update", chartPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	fmt.Println("[utils][helm]📦 Mise à jour des dépendances...")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("[utils][helm] erreur lors de la mise à jour des dépendances du chart: %v", err)
-	}
-
-	// 2. Déployer ou mettre à jour le chart avec helm upgrade --install
-	fmt.Println("🚀 Déploiement ou mise à jour du chart...")
-	upgradeCmd := exec.Command("helm", "upgrade", "--install", releaseName, chartPath, "--namespace", namespace, "--force", "-f", valuesYaml)
-	upgradeCmd.Stdout = os.Stdout
-	upgradeCmd.Stderr = os.Stderr
-	if err := upgradeCmd.Run(); err != nil {
-		return fmt.Errorf("[utils][helm] erreur lors de l'installation ou de la mise à jour du chart: %v", err)
-	}
-
-	fmt.Println("✅ Déploiement réussi!")
+	fmt.Println("[utils][helm] ✅ Déploiement réussi!")
 	return nil
 }
 
@@ -155,7 +78,7 @@ func DeployOrUpdateHelmChart(chartPath, releaseName, namespace string, valuesYam
 	}
 
 	// Installation ou mise à jour du chart
-	fmt.Println("🚀 Déploiement du chart...")
+	fmt.Println("[utils][helm]🚀 Déploiement du chart...")
 	chartSpec := &helmclient.ChartSpec{
 		ReleaseName: releaseName,
 		ChartName:   chartPath,
@@ -165,4 +88,44 @@ func DeployOrUpdateHelmChart(chartPath, releaseName, namespace string, valuesYam
 	}
 
 	return client.InstallOrUpgradeChart(context.Background(), chartSpec, nil)
+}
+
+func DeleteHelmRelease(releaseName, namespace string) error {
+	// 1. Construire la commande `helm uninstall`
+	cmd := exec.Command("helm", "uninstall", releaseName, "--namespace", namespace)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	fmt.Printf("[utils][helm] 🗑️ Suppression de la release %s dans le namespace %s...\n", releaseName, namespace)
+
+	// Exécuter la commande
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("[utils][helm]❌ Erreur lors de la suppression de la release %s: %v", releaseName, err)
+	}
+
+	fmt.Printf("[utils][helm] ✅ La release %s a été supprimée avec succès du namespace %s.\n", releaseName, namespace)
+	return nil
+}
+
+func GetHelmReleases(namespace string) ([]string, error) {
+	// Construire la commande Helm list
+	cmd := exec.Command("helm", "list", "--namespace", namespace, "-q")
+
+	// Exécuter la commande et récupérer la sortie
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("❌ Erreur lors de l'exécution de 'helm list': %v", err)
+	}
+
+	// Transformer la sortie en une liste de noms de release
+	releases := strings.Split(strings.TrimSpace(out.String()), "\n")
+
+	// Si aucune release trouvée, retourner une liste vide
+	if len(releases) == 1 && releases[0] == "" {
+		return []string{}, nil
+	}
+
+	return releases, nil
 }

@@ -9,22 +9,18 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
-// GitLabRepo représente un dépôt GitLab à surveiller
-type GitLabRepo struct {
-	URL    string
-	Branch string
-}
+// GitRepo représente un dépôt GitLab à surveiller
 
 // Watcher interface pour gérer la détection de nouveaux commits
 type Watcher interface {
-	NotifyNewCommit(repo GitLabRepo, commitID string)
+	NotifyNewCommit(repo GitRepo, commitID string)
 }
 
 // GitLabWatcher surveille les commits sur des dépôts GitLab
 type GitLabWatcher struct {
 	controller   Watcher
 	client       *gitlab.Client
-	repositories []GitLabRepo
+	repositories []GitRepo
 }
 
 // NewGitLabWatcher crée un watcher attaché à un contrôleur et un client GitLab
@@ -36,13 +32,13 @@ func NewGitLabWatcher(controller Watcher, client *gitlab.Client) *GitLabWatcher 
 }
 
 // AddRepository permet d'ajouter un dépôt à surveiller
-func (w *GitLabWatcher) AddRepository(repo GitLabRepo) {
+func (w *GitLabWatcher) AddRepository(repo GitRepo) {
 	w.repositories = append(w.repositories, repo)
 	fmt.Printf("[watchers][gitlab] 📌 Dépôt ajouté : %s (%s)\n", repo.URL, repo.Branch)
 	fmt.Println(w.repositories)
 }
 
-func (w *GitLabWatcher) CheckRepo(repo GitLabRepo, commitHistory map[string]string) {
+func (w *GitLabWatcher) CheckRepo(repo GitRepo, commitHistory map[string]string) {
 	// Récupérer l'ID du projet et la visibilité à partir de l'URL
 	projectID, err := getGitLabProjectID(w.client, repo.URL)
 	if err != nil {

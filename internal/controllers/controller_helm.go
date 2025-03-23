@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
-	"time"
+	"os"
+	"path/filepath"
 
 	"github.com/Exxog/NoArgoCD/internal/getters"
 	"github.com/Exxog/NoArgoCD/internal/utils"
@@ -24,7 +24,7 @@ type chartHelm struct {
 // ControllerGit gère les dépôts GitLab à surveiller
 type ControllerHelm struct {
 	gitController *ControllerGit
-	repos         []watchers.GitLabRepo
+	repos         []watchers.GitRepo
 }
 
 // NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
@@ -34,25 +34,58 @@ func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
 	}
 	return controller
 }
-
-func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any) {
-	fmt.Println("🔄 ADD HELM")
+func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any, releaseName string) {
+	fmt.Println("[controllers][helm]🔄 ADD HELM")
 	fmt.Println(helm["helm"])
 	repoURL := helm["helm"].(map[interface{}]interface{})["repoUrl"]
 	targetRevision := helm["helm"].(map[interface{}]interface{})["targetRevision"]
+	chartPath := helm["helm"].(map[interface{}]interface{})["path"]
+	values := helm["helm"].(map[interface{}]interface{})["values"]
+	values = utils.ConvertToYaml(helm["helm"].(map[interface{}]interface{}))
 
+	fmt.Println("DETECTION!!! ", helm)
 	c.gitController.AddRepository(repoURL.(string), targetRevision.(string))
-
+	installHelmChartFromGit(watchers.GitRepo{URL: repoURL.(string), Branch: targetRevision.(string)}, chartPath.(string), releaseName, "", values.([]byte))
 }
 
-func installHelmChartFromGitOLD(repo watchers.GitLabRepo, chartPath, releaseName, namespace string) {
-	namespace = utils.GetNamespace(namespace)
-	println(repo.URL)
-	utils.CloneOrUpdateRepo(repo.URL, "/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", "")
-	utils.DeployOrUpdateHelmChartViaCmd("/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch)+"/"+chartPath, releaseName, namespace, "")
+func (c *ControllerHelm) DeleteHelmChartFromCM(helm map[string]any, releaseName string) {
+	helmData, ok := helm["helm"].(map[interface{}]interface{})
+	if !ok {
+		fmt.Println("❌ Erreur de récupération des données du chart.")
+		return
+	}
+
+	repoURL, repoURLOk := helmData["repoUrl"].(string)
+	targetRevision, revOk := helmData["targetRevision"].(string)
+
+	if !repoURLOk || !revOk {
+		fmt.Println("❌ repoUrl ou targetRevision manquants.")
+		return
+	}
+
+	fmt.Println("[controllers][helm] DELETE HELM")
+
+	namespace, namespaceOk := helmData["namespace"].(string)
+	if !namespaceOk {
+		namespace = ""
+	}
+
+	if len(getters.GetHelm(repoURL, targetRevision, namespace)) == 0 {
+		//TODOdelete cacheRepo et dependances
+		cachePath := filepath.Join(os.Getenv("HOME"), ".cache", "helm", "archives", releaseName+"-*.tgz")
+
+		// Trouver et supprimer les fichiers
+		files, _ := filepath.Glob(cachePath)
+		for _, file := range files {
+			os.Remove(file)
+		}
+
+		c.gitController.RemoveRepository(repoURL, targetRevision)
+	}
+	utils.DeleteHelmRelease(releaseName, namespace)
 }
 
-func installHelmChartFromGit(repo watchers.GitLabRepo, chartPath, releaseName, namespace, values string) {
+func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, namespace string, values []byte) {
 	namespace = utils.GetNamespace(namespace)
 	println(repo.URL)
 
@@ -62,18 +95,18 @@ func installHelmChartFromGit(repo watchers.GitLabRepo, chartPath, releaseName, n
 		if err := utils.CloneOrUpdateRepo(repo.URL, "/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", ""); err != nil {
 			fmt.Printf("[controller][helm] ❌ Erreur lors du clonage/mise à jour du dépôt: %v\n", err)
 			fmt.Println("[controller][helm] ⏳ Tentative après 30 secondes...")
-			time.Sleep(30 * time.Second)
-			continue // Réessayer
+			//time.Sleep(30 * time.Second)
+			//continue // Réessayer
 		}
 
 		// Déployer ou mettre à jour le chart Helm
-		fmt.Println("🚀 Déploiement du chart Helm...")
+		fmt.Println("[controller][helm]🚀 Déploiement du chart Helm...")
 		err := utils.DeployOrUpdateHelmChartViaCmd("/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch)+"/"+chartPath, releaseName, namespace, values)
 		if err != nil {
 			fmt.Printf("[controller][helm] ❌ Erreur lors du déploiement du chart: %v\n", err)
 			fmt.Println("[controller][helm] ⏳ Tentative après 30 secondes...")
-			time.Sleep(30 * time.Second)
-			continue // Réessayer
+			//time.Sleep(30 * time.Second)
+			//continue // Réessayer
 		}
 
 		fmt.Println("[controller][helm] ✅ Déploiement réussi!")
@@ -81,22 +114,18 @@ func installHelmChartFromGit(repo watchers.GitLabRepo, chartPath, releaseName, n
 	}
 }
 
-func (c *ControllerHelm) InstallHelmChart(repo watchers.GitLabRepo) {
-	helmCharts := getters.GetHelm(repo.URL, repo.Branch)
+func (c *ControllerHelm) InstallHelmChart(repo watchers.GitRepo) {
+
+	helmCharts := getters.GetHelm(repo.URL, repo.Branch, "")
 
 	for key, charts := range helmCharts {
 		for _, chart := range charts {
 			if repoURL, ok := chart["repoUrl"].(string); ok {
+
 				fmt.Printf("[controller][helm] 🔹 Clé: %s, Repo URL: %s\n", key, repoURL)
+				yamlData := utils.ConvertToYaml(chart)
 
-				values := ""
-				if _, exists := chart["values"]; exists {
-					jsonString, _ := json.Marshal(chart["values"])
-					values = string(jsonString)
-
-				}
-
-				installHelmChartFromGit(repo, chart["path"].(string), key, "", values)
+				installHelmChartFromGit(repo, chart["path"].(string), key, "", yamlData)
 
 			}
 		}

@@ -42,6 +42,7 @@ func getConfigMaps(namespace, label string) []v1.ConfigMap {
 	if err != nil {
 		log.Fatalf("Erreur lors de la configuration du client Kubernetes: %v", err)
 	}
+	namespace = utils.GetNamespace(namespace)
 
 	configMaps, err := utils.GetConfigMapsWithLabel(clientset, namespace, label)
 	if err != nil {
@@ -51,8 +52,26 @@ func getConfigMaps(namespace, label string) []v1.ConfigMap {
 	return configMaps
 }
 
-func GetHelm(targetURL, targetRevision string) map[string][]map[interface{}]interface{} {
-	configMaps := getConfigMaps("default", "nac=true")
+func GetHelm(targetURL, targetRevision, namespace string) map[string][]map[interface{}]interface{} {
+	configMaps := getConfigMaps(namespace, "nac=true")
 	return findHelmEntriesWithRepoURL(configMaps, targetURL, "helm", targetRevision)
 
+}
+
+func GetAllConfigMapKeys(namespace string) []string {
+
+	configMaps := getConfigMaps(namespace, "nac=true")
+	var keys []string
+	uniqueKeys := make(map[string]struct{}) // Pour éviter les doublons
+
+	for _, cm := range configMaps {
+		for key := range cm.Data {
+			if _, exists := uniqueKeys[key]; !exists {
+				keys = append(keys, key)
+				uniqueKeys[key] = struct{}{}
+			}
+		}
+	}
+
+	return keys
 }

@@ -36,7 +36,7 @@ func containsKey(dataMap map[string]interface{}, key string) bool {
 }
 
 // Watch surveille les ConfigMaps dans un namespace donné
-func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap)) {
+func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap), onDelete func(*v1.ConfigMap)) {
 	for {
 		// Surveille les ConfigMaps dans le namespace spécifié
 		fmt.Printf("[watchers][cm]🔍 Surveillance des ConfigMaps dans le namespace '%s'...\n", namespace)
@@ -56,12 +56,16 @@ func (w *ConfigMapWatcher) Watch(namespace string, onUpdate func(*v1.ConfigMap))
 			fmt.Printf("[watchers][cm]📝 Événement détecté : %v, ConfigMap: %s\n", event.Type, event.Object.(*v1.ConfigMap).Name)
 			configMap := event.Object.(*v1.ConfigMap)
 			switch event.Type {
-			case "MODIFIED", "DELETED":
-				fmt.Println("[watchers][cm]🛠📝️ Mise à jour détectée sur un ConfigMap : ", event.Type)
+			case "MODIFIED":
+				fmt.Println("[watchers][cm] modif sur configmap détectée : ", event.Type)
 				// Ici, tu peux ajouter la logique pour extraire les informations des ConfigMaps et les envoyer à onUpdate
-			case "ADDED":
-				fmt.Println("[watchers][cm]🛠️📝 Mise à jour détectée sur un ConfigMap : ", event.Type)
 				onUpdate(configMap)
+			case "ADDED":
+				fmt.Println("[watchers][cm] ajout d'un ConfigMap : ", event.Type)
+				onUpdate(configMap)
+			case "DELETED":
+				fmt.Println("[watchers][cm] supression d'un ConfigMap : ", event.Type)
+				onDelete(configMap)
 
 			default:
 				// Log pour afficher d'autres types d'événements qui pourraient se produire
