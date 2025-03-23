@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -33,7 +34,7 @@ func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, val
 	fmt.Println("[utils][helm]🚀 Déploiement ou mise à jour du chart...")
 	upgradeCmd := []string{
 		"upgrade", "--install", releaseName, chartPath,
-		"--namespace", namespace, "--force",
+		"--namespace", namespace, "--force", "--set", "metadata.labels.nac='true'",
 	}
 
 	// Ajouter le fichier `values.yaml` seulement s'il a été généré
@@ -128,4 +129,38 @@ func GetHelmReleases(namespace string) ([]string, error) {
 	}
 
 	return releases, nil
+}
+
+type HelmRelease struct {
+	Name   string            `json:"name"`
+	Labels map[string]string `json:"labels"`
+}
+
+func GetHelmReleasesFiltered(namespace, labelKey, labelValue string) ([]string, error) {
+	// Construire la commande Helm list avec sortie JSON
+	cmd := exec.Command("helm", "list", "--namespace", namespace, "--output", "json")
+
+	// Exécuter la commande et récupérer la sortie
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("❌ Erreur lors de l'exécution de 'helm list': %v", err)
+	}
+
+	// Transformer la sortie JSON en une liste de HelmRelease
+	var releases []HelmRelease
+	if err := json.Unmarshal(out.Bytes(), &releases); err != nil {
+		return nil, fmt.Errorf("❌ Erreur de parsing JSON : %v", err)
+	}
+
+	// Filtrer les releases par label
+	var filteredReleases []string
+	for _, release := range releases {
+		if val, ok := release.Labels[labelKey]; ok && val == labelValue {
+			filteredReleases = append(filteredReleases, release.Name)
+		}
+	}
+
+	return filteredReleases, nil
 }

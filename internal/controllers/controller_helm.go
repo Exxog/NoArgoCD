@@ -25,11 +25,18 @@ type chartHelm struct {
 type ControllerHelm struct {
 	gitController *ControllerGit
 	repos         []watchers.GitRepo
+	watcher       *watchers.HelmWatcher
 }
 
 // NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
 func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
+
+	HelmWatcher, err := watchers.NewHelmWatcher()
+	if err != nil {
+		return nil, err
+	}
 	controller := &ControllerHelm{
+		watcher:       HelmWatcher,
 		gitController: gitController,
 	}
 	return controller
@@ -37,15 +44,26 @@ func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
 func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any, releaseName string) {
 	fmt.Println("[controllers][helm]🔄 ADD HELM")
 	fmt.Println(helm["helm"])
-	repoURL := helm["helm"].(map[interface{}]interface{})["repoUrl"]
-	targetRevision := helm["helm"].(map[interface{}]interface{})["targetRevision"]
-	chartPath := helm["helm"].(map[interface{}]interface{})["path"]
-	values := helm["helm"].(map[interface{}]interface{})["values"]
-	values = utils.ConvertToYaml(helm["helm"].(map[interface{}]interface{}))
+	helmData, ok := helm["helm"].(map[interface{}]interface{})
+
+	if !ok {
+		fmt.Println("❌ Erreur de récupération des données du chart.")
+		return
+	}
+
+	repoURL, _ := helmData["repoUrl"].(string)
+	targetRevision, _ := helmData["targetRevision"].(string)
+	chartPath, _ := helmData["path"].(string)
+	//values, _ := helmData["values"].(string)
+	values := utils.ConvertToYaml(helmData)
+
+	//chartPath := helm["helm"].(map[interface{}]interface{})["path"]
+	//values := helm["helm"].(map[interface{}]interface{})["values"]
+	//values = utils.ConvertToYaml(helm["helm"].(map[interface{}]interface{}))
 
 	fmt.Println("DETECTION!!! ", helm)
-	c.gitController.AddRepository(repoURL.(string), targetRevision.(string))
-	installHelmChartFromGit(watchers.GitRepo{URL: repoURL.(string), Branch: targetRevision.(string)}, chartPath.(string), releaseName, "", values.([]byte))
+	c.gitController.AddRepository(repoURL, targetRevision)
+	installHelmChartFromGit(watchers.GitRepo{URL: repoURL, Branch: targetRevision}, chartPath, releaseName, "", values)
 }
 
 func (c *ControllerHelm) DeleteHelmChartFromCM(helm map[string]any, releaseName string) {

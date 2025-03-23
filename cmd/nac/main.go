@@ -34,8 +34,7 @@ func main() {
 	// Ajout des dépôts à surveiller dans GitLab
 
 	// Démarrer la surveillance des dépôts GitLab
-	interval := 30 * time.Second
-	go controllerGit.StartWatching(interval)
+	go controllerGit.StartWatching(30 * time.Second)
 
 	// Création du contrôleur Kube avec une instance de ControllerGit
 	controllerKube, err := controllers.NewControllerKube(controllerHelm)

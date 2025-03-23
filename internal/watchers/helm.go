@@ -1,9 +1,6 @@
 package watchers
 
 import (
-	"fmt"
-	"log"
-	"os/exec"
 	"time"
 
 	"github.com/Exxog/NoArgoCD/internal/getters"
@@ -24,24 +21,33 @@ func NewHelmWatcher(releaseName, namespace string) *HelmWatcher {
 	}
 }
 
-// ShowRelease affiche les détails de la release Helm
-func (w *HelmWatcher) ShowRelease() {
-	cmd := exec.Command("helm", "status", w.releaseName, "--namespace", w.namespace)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("[watchers][helm] ❌ Erreur lors de l'exécution de 'helm status %s' dans le namespace '%s': %v\n", w.releaseName, w.namespace, err)
-		return
+func GetHelmWithoutCM(keys, helm []string) []string {
+	// Créer une map pour les clés pour une recherche rapide
+	keyMap := make(map[string]struct{})
+	for _, key := range keys {
+		keyMap[key] = struct{}{}
 	}
-	fmt.Printf("[watchers][helm] 📜 Détails de la release %s (namespace: %s):\n%s\n", w.releaseName, w.namespace, string(output))
+
+	// Chercher les Helm releases qui ne sont pas présentes dans les keys
+	var missingHelm []string
+	for _, helmRelease := range helm {
+		if _, exists := keyMap[helmRelease]; !exists {
+			missingHelm = append(missingHelm, helmRelease)
+		}
+	}
+
+	return missingHelm
 }
 
 // Watch lance une boucle infinie qui exécute `helm status` toutes les 30 secondes
-func (w *HelmWatcher) Watch() {
+func (w *HelmWatcher) WatchOrphelanHelmReleases() {
 	for {
 		keys := getters.GetAllConfigMapKeys("")
-		helm, _ := utils.GetHelmReleases("")
+		helm, _ := utils.GetHelmReleasesFiltered("", "nac", "true")
+		for _, value := range GetHelmWithoutCM(keys, helm) {
+			utils.DeleteHelmRelease(value, "")
+		}
 
-		w.ShowRelease()
 		time.Sleep(30 * time.Second)
 	}
 }
