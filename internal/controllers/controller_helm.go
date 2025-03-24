@@ -31,10 +31,8 @@ type ControllerHelm struct {
 // NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
 func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
 
-	HelmWatcher, err := watchers.NewHelmWatcher()
-	if err != nil {
-		return nil, err
-	}
+	HelmWatcher := watchers.NewHelmWatcher()
+
 	controller := &ControllerHelm{
 		watcher:       HelmWatcher,
 		gitController: gitController,

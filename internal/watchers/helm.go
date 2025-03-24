@@ -9,12 +9,12 @@ import (
 
 // HelmWatcher surveille une release Helm à intervalle régulier
 type HelmWatcher struct {
-	releaseName string
-	namespace   string
+	controller string
+	namespace  string
 }
 
 // NewHelmWatcher crée une nouvelle instance de HelmWatcher
-func NewHelmWatcher(releaseName, namespace string) *HelmWatcher {
+func NewHelmWatcher() *HelmWatcher {
 	return &HelmWatcher{
 		releaseName: releaseName,
 		namespace:   namespace,
