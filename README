@@ -1,0 +1,63 @@
+# NoArgoCD
+
+NoArgoCD est un opérateur Kubernetes écrit en Go qui permet de déployer automatiquement des charts Helm à partir de dépôts Git, en se basant sur des ConfigMaps annotées dans le cluster. Il s'agit d'une alternative légère à ArgoCD, sans serveur web ni CRD personnalisée.
+
+## Fonctionnement
+
+- **Surveillance des ConfigMaps** : Le contrôleur surveille les ConfigMaps Kubernetes portant le label `nac=true`.
+- **Détection de charts Helm** : Lorsqu'une ConfigMap contient une clé avec une structure `helm`, le contrôleur va cloner le dépôt Git référencé, puis déployer ou mettre à jour le chart Helm spécifié.
+- **Synchronisation Git** : Les dépôts Git sont surveillés pour détecter les nouveaux commits. Lorsqu'un commit est détecté, le chart Helm est redéployé automatiquement.
+- **Nettoyage** : Les releases Helm orphelines (présentes dans le cluster mais absentes des ConfigMaps) sont automatiquement supprimées.
+
+## Exemple de ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+  labels:
+    nac: "true"
+data:
+  nginx-chart-app1: |
+    helm:
+      repoUrl: https://github.com/Exxog/NoArgoCD
+      path: examples/nginx/
+      targetRevision: main
+      values:
+        test: nope
+```
+
+## Démarrage rapide
+
+1. **Prérequis** :
+   - Kubernetes cluster
+   - Accès aux dépôts Git publics (ou privés avec token)
+
+2. **Déploiement** :
+   - Appliquez une ConfigMap comme ci-dessus dans votre cluster.
+   - Lancez l'opérateur :
+     ```bash
+     go run ./cmd/nac/main.go
+     ```
+   - Les charts Helm référencés seront automatiquement déployés et synchronisés.
+
+3. **Exemples** :
+   - Voir le dossier `examples/` pour des ConfigMaps et charts Helm prêts à l'emploi.
+
+## Structure du projet
+
+- `cmd/nac/main.go` : Point d'entrée principal de l'opérateur
+- `internal/controllers/` : Logique des contrôleurs (Kube, Helm, Git)
+- `internal/watchers/` : Surveillance des ressources (ConfigMap, Git, Helm)
+- `internal/utils/` : Fonctions utilitaires (Git, Helm, K8s)
+- `examples/` : Exemples de charts Helm et ConfigMaps
+
+## Limitations
+- Ne gère que les charts Helm référencés dans des ConfigMaps avec le label `nac=true`
+- Pas d'interface web
+- Pas de gestion avancée des droits d'accès Git (support basique du token)
+
+## Licence
+
+Ce projet est sous licence Apache 2.0.

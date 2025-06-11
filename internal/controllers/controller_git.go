@@ -6,7 +6,6 @@ import (
 
 	"github.com/Exxog/NoArgoCD/internal/utils"
 	"github.com/Exxog/NoArgoCD/internal/watchers"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 // ControllerGit gère les dépôts GitLab à surveiller

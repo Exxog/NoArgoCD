@@ -11,13 +11,14 @@ import (
 type HelmWatcher struct {
 	controller string
 	namespace  string
+	releaseName string
 }
 
 // NewHelmWatcher crée une nouvelle instance de HelmWatcher
 func NewHelmWatcher() *HelmWatcher {
 	return &HelmWatcher{
-		releaseName: releaseName,
-		namespace:   namespace,
+		releaseName: "",
+		namespace:   "",
 	}
 }
 

@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/Exxog/NoArgoCD/internal/controllers"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func main() {

@@ -15,6 +15,9 @@ type GitRepo struct {
 }
 
 // Watcher interface pour gérer la détection de nouveaux commits
+type Watcher interface {
+	NotifyNewCommit(repo GitRepo, commitID string)
+}
 
 // gitWatcher surveille les commits sur des dépôts git
 type GitWatcher struct {
