@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+  labels:
+    nac: "true"
+data:
+  nginx-test4: |
+    helm:
+      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
+      path: nginx/ 
+      targetRevision: main
+      #chart: 
+      #path: './'n
+      values:
+        test: nope
+  nginx-test: |
+    helm:
+      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
+      path: nginx/ 
+      targetRevision: main
+      #chart: 
+      #path: './'
+      values:
+        test: a
+  graylog: |
+    helm:
+      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
+      path: graylog/ 
+      targetRevision: main
+      #chart: 
+      #path: './'
+      values:
+        graylog:
+          image:
+            repository: "graylog/graylog"
+            tag: "5.2.6"
+            pullPolicy: "Always"        
+        opensearch:
+          replicas: 1
+

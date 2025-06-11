@@ -17,7 +17,7 @@ type ControllerGit struct {
 }
 
 // NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
-func NewControllerGit(client *gitlab.Client, helmController *ControllerHelm) *ControllerGit {
+func NewControllerGit(helmController *ControllerHelm) *ControllerGit {
 	controller := &ControllerGit{
 		helmController: helmController,
 	}
