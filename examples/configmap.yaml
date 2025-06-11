@@ -8,7 +8,7 @@ metadata:
 data:
   bootstrap: |
     helm:
-      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
+      repoUrl: https://gitlab.com/Exxog/NoArgoCD.git
       path: bootstrapForNac/
       targetRevision: main
       #chart: 
