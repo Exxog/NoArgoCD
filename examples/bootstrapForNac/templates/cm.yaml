@@ -6,37 +6,21 @@ metadata:
   labels:
     nac: "true"
 data:
-  nginx-test4: |
+  nginx-chart-app1: |
     helm:
-      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
-      path: nginx/ 
+      repoUrl: https://github.com/Exxog/NoArgoCD
+      path: examples/nginx/
       targetRevision: main
       #chart: 
       #path: './'n
       values:
         test: nope
-  nginx-test: |
+  nginx-chart-app2: |
     helm:
-      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
-      path: nginx/ 
+      repoUrl: https://github.com/Exxog/NoArgoCD
+      path: examples/nginx/ 
       targetRevision: main
       #chart: 
       #path: './'
       values:
         test: a
-  graylog: |
-    helm:
-      repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
-      path: graylog/ 
-      targetRevision: main
-      #chart: 
-      #path: './'
-      values:
-        graylog:
-          image:
-            repository: "graylog/graylog"
-            tag: "5.2.6"
-            pullPolicy: "Always"        
-        opensearch:
-          replicas: 1
-

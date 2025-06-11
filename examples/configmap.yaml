@@ -9,7 +9,7 @@ data:
   bootstrap: |
     helm:
       repoUrl: https://gitlab.com/Exxog/testhelmchartfromgit
-      path: bootstrapForNac/ 
+      path: bootstrapForNac/
       targetRevision: main
       #chart: 
       #path: './'
