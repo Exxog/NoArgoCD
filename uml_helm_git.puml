@@ -1,0 +1,54 @@
+@startuml
+
+class ControllerHelm {
+    - gitController : ControllerGit
+    - repos : List<GitRepo>
+    - watcher : HelmWatcher
+    + DetectHelmChartFromCM()
+    + DeleteHelmChartFromCM()
+    + InstallHelmChart()
+    + AddConfigMap()
+}
+
+class ControllerGit {
+    - helmController : ControllerHelm
+    - watcher : GitWatcher
+    - repos : List<GitRepo>
+    + AddRepository()
+    + RemoveRepository()
+    + NotifyNewCommit()
+    + StartWatching()
+}
+
+class GitWatcher {
+    - controller : Watcher
+    - repositories : List<GitRepo>
+    - repositoriesMap : Map
+    + AddRepository()
+    + RemoveRepository()
+    + NotifyNewCommit()
+    + CheckRepo()
+    + Watch()
+}
+
+class HelmWatcher {
+    - controller : string
+    - namespace : string
+    - releaseName : string
+    + WatchOrphelanHelmReleases()
+}
+
+class GitRepo {
+    - URL : string
+    - Branch : string
+}
+
+ControllerHelm --> ControllerGit : uses
+ControllerHelm --> HelmWatcher : owns
+ControllerGit --> ControllerHelm : uses
+ControllerGit --> GitWatcher : owns
+GitWatcher --> GitRepo : manages
+ControllerHelm --> GitRepo : manages
+HelmWatcher --> GitRepo : (optional, for context)
+
+@enduml
