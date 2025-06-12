@@ -100,6 +100,7 @@ func DeployOrUpdateHelmChart(chartPath, releaseName, namespace string, valuesYam
 
 func DeleteHelmRelease(releaseName, namespace string) error {
 	// 1. Construire la commande `helm uninstall`
+	releaseName = "nac-" + releaseName
 	cmd := exec.Command("helm", "uninstall", releaseName, "--namespace", namespace)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -4,10 +4,13 @@ import (
 	"log"
 	"time"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/Exxog/NoArgoCD/internal/controllers"
+	"github.com/Exxog/NoArgoCD/internal/utils"
 )
 
 func main() {
+	config.Namespace = utils.GetNamespace(config.Namespace)
 	// Création du contrôleur GitLab
 
 	controllerGit := controllers.NewControllerGit(nil)
@@ -24,7 +27,7 @@ func main() {
 	}
 
 	// Démarrer la surveillance des ConfigMaps dans Kubernetes (dans le namespace "default")
-	go controllerKube.StartWatching("")
+	go controllerKube.StartWatching(config.Namespace)
 
 	// Démarrer la suppressions des release helms orphelines
 	go controllerHelm.StartWatching(30 * time.Second)

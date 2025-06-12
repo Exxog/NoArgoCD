@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/Exxog/NoArgoCD/internal/getters"
 	"github.com/Exxog/NoArgoCD/internal/utils"
 )
@@ -19,7 +20,7 @@ type HelmWatcher struct {
 func NewHelmWatcher() *HelmWatcher {
 	return &HelmWatcher{
 		releaseName: "",
-		namespace:   "",
+		namespace:   config.Namespace,
 	}
 }
 
@@ -44,8 +45,8 @@ func GetHelmWithoutCM(keys, helm []string) []string {
 func (w *HelmWatcher) Watch(interval time.Duration) {
 	log.Printf("[watchers][helm] Surveillance des releases Helm commençant par 'nac-'")
 	for {
-		keys := getters.GetAllConfigMapKeys("")
-		releases, _ := utils.GetHelmReleases("")
+		keys := getters.GetAllConfigMapKeys(config.Namespace)
+		releases, _ := utils.GetHelmReleases(config.Namespace)
 		var nacReleases []string
 		for _, r := range releases {
 			if len(r) >= 4 && r[:4] == "nac-" {
@@ -53,7 +54,7 @@ func (w *HelmWatcher) Watch(interval time.Duration) {
 			}
 		}
 		for _, value := range GetHelmWithoutCM(keys, nacReleases) {
-			utils.DeleteHelmRelease(value, "")
+			utils.DeleteHelmRelease(value, config.Namespace)
 		}
 		time.Sleep(interval)
 	}

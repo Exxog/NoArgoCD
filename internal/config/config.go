@@ -2,3 +2,4 @@
 package config
 
 var NacTmpDir = "/tmp/nac/"
+var Namespace = ""

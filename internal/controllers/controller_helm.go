@@ -63,7 +63,7 @@ func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any, releaseName 
 
 	fmt.Println("DETECTION!!! ", helm)
 	c.gitController.AddRepository(repoURL, targetRevision)
-	installHelmChartFromGit(watchers.GitRepo{URL: repoURL, Branch: targetRevision}, chartPath, releaseName, "", values)
+	installHelmChartFromGit(watchers.GitRepo{URL: repoURL, Branch: targetRevision}, chartPath, releaseName, config.Namespace, values)
 }
 
 func (c *ControllerHelm) DeleteHelmChartFromCM(helm map[string]any, releaseName string) {
@@ -85,7 +85,7 @@ func (c *ControllerHelm) DeleteHelmChartFromCM(helm map[string]any, releaseName 
 
 	namespace, namespaceOk := helmData["namespace"].(string)
 	if !namespaceOk {
-		namespace = ""
+		namespace = config.Namespace
 	}
 
 	if len(getters.GetHelm(repoURL, targetRevision, namespace)) == 0 {
@@ -134,7 +134,7 @@ func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, name
 
 func (c *ControllerHelm) InstallHelmChart(repo watchers.GitRepo) {
 
-	helmCharts := getters.GetHelm(repo.URL, repo.Branch, "")
+	helmCharts := getters.GetHelm(repo.URL, repo.Branch, config.Namespace)
 
 	for key, charts := range helmCharts {
 		for _, chart := range charts {
@@ -143,7 +143,7 @@ func (c *ControllerHelm) InstallHelmChart(repo watchers.GitRepo) {
 				fmt.Printf("[controller][helm] 🔹 Clé: %s, Repo URL: %s\n", key, repoURL)
 				yamlData := utils.ConvertToYaml(chart)
 
-				installHelmChartFromGit(repo, chart["path"].(string), key, "", yamlData)
+				installHelmChartFromGit(repo, chart["path"].(string), key, config.Namespace, yamlData)
 
 			}
 		}
