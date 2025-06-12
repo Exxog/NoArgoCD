@@ -33,7 +33,7 @@ func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, val
 	}
 
 	// 2. Construire la commande `helm upgrade --install`
-	fmt.Println("[utils][helm]🚀 Déploiement ou mise à jour du chart...")
+	fmt.Printf("[utils][helm]🚀 Déploiement ou mise à jour du chart \033[32m%s\033[0m\n", chartPath)
 	upgradeCmd := []string{
 		"upgrade", "--install", releaseName, chartPath,
 		"--namespace", namespace, "--force", "--set", "metadata.labels.nac='true'",

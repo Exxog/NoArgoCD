@@ -127,7 +127,7 @@ func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, name
 			//continue // Réessayer
 		}
 
-		fmt.Println("[controller][helm] ✅ Déploiement réussi!")
+		fmt.Println("[controller][helm] \033[32mDéploiement réussi!\033[0m")
 		break // Sortir de la boucle si tout est OK
 	}
 }
