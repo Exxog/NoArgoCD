@@ -14,7 +14,6 @@ data:
       #chart: 
       values:
         test: nope
-data:
   nginx-chart-app2: |
     helm:
       repoUrl: https://github.com/Exxog/NoArgoCD-private.git
