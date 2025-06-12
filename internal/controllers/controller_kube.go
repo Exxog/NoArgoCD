@@ -67,7 +67,7 @@ func (c *ControllerKube) onUpdate(cm *v1.ConfigMap) {
 		switch getFirstKey(dataMap) {
 
 		case "helm":
-			fmt.Printf("[controllers][kube]➡ CM contient clé '%s' contient 'helm'.\n", key)
+			fmt.Printf("[controllers][kube]'%s'➡ CM contient clé '%s' contient 'helm'.\n", cm.Name, key)
 			// Traitement spécifique pour 'helm'
 			c.helmController.DetectHelmChartFromCM(dataMap, key)
 		case "apply":
