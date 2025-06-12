@@ -101,7 +101,7 @@ func (w *GitWatcher) CheckRepo(repo GitRepo, commitHistory map[string]string) {
 	}
 }
 
-func (w *GitWatcher) Watch(interval time.Duration) {
+func (w *GitWatcher) WatchRepo(interval time.Duration) {
 	commitHistory := make(map[string]string)
 
 	// Lancer la surveillance des dépôts à intervalles réguliers
