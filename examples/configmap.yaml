@@ -9,7 +9,7 @@ data:
   bootstrap: |
     helm:
       repoUrl: https://github.com/Exxog/NoArgoCD.git
-      path: bootstrapForNac/
+      path: examples/bootstrapForNac/
       targetRevision: main
       #chart: 
       #path: './'

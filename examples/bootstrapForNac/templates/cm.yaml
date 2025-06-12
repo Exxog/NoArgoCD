@@ -15,12 +15,4 @@ data:
       #path: './'n
       values:
         test: nope
-  nginx-chart-app2: |
-    helm:
-      repoUrl: https://github.com/Exxog/NoArgoCD
-      path: examples/nginx/ 
-      targetRevision: main
-      #chart: 
-      #path: './'
-      values:
-        test: a
+
