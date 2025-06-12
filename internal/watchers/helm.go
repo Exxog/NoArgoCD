@@ -1,6 +1,7 @@
 package watchers
 
 import (
+	"log"
 	"time"
 
 	"github.com/Exxog/NoArgoCD/internal/getters"
@@ -9,8 +10,8 @@ import (
 
 // HelmWatcher surveille une release Helm à intervalle régulier
 type HelmWatcher struct {
-	controller string
-	namespace  string
+	controller  string
+	namespace   string
 	releaseName string
 }
 
@@ -40,15 +41,20 @@ func GetHelmWithoutCM(keys, helm []string) []string {
 	return missingHelm
 }
 
-// Watch lance une boucle infinie qui exécute `helm status` toutes les 30 secondes
-func (w *HelmWatcher) WatchOrphelanHelmReleases() {
+func (w *HelmWatcher) Watch(interval time.Duration) {
+	log.Printf("[watchers][helm] Surveillance des releases Helm commençant par 'nac-'")
 	for {
 		keys := getters.GetAllConfigMapKeys("")
-		helm, _ := utils.GetHelmReleasesFiltered("", "nac", "true")
-		for _, value := range GetHelmWithoutCM(keys, helm) {
+		releases, _ := utils.GetHelmReleases("")
+		var nacReleases []string
+		for _, r := range releases {
+			if len(r) >= 4 && r[:4] == "nac-" {
+				nacReleases = append(nacReleases, r[4:]) // On enlève le préfixe 'nac-'
+			}
+		}
+		for _, value := range GetHelmWithoutCM(keys, nacReleases) {
 			utils.DeleteHelmRelease(value, "")
 		}
-
-		time.Sleep(30 * time.Second)
+		time.Sleep(interval)
 	}
 }

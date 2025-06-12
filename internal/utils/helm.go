@@ -9,13 +9,15 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/google/uuid"
 	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/release"
 )
 
 func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, valuesYamlContent []byte) error {
-	valuesFilePath := "/tmp/nac" + uuid.New().String() // Chemin temporaire pour le fichier YAML
+	releaseName = "nac-" + releaseName
+	valuesFilePath := config.NacTmpDir + uuid.New().String() // Utilisation de la variable globale du package config
 	// Si des valeurs sont fournies, on les écrit dans values.yaml
 	if err := WriteYAMLToFile(valuesFilePath, valuesYamlContent); err != nil {
 		return err
@@ -59,6 +61,10 @@ func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, val
 	}
 
 	fmt.Println("[utils][helm] ✅ Déploiement réussi!")
+	if len(valuesYamlContent) != 0 {
+		_ = os.Remove(valuesFilePath)
+	}
+
 	return nil
 }
 
@@ -66,11 +72,12 @@ func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, val
 
 // DeployOrUpdateHelmChart installe ou met à jour un chart Helm local
 func DeployOrUpdateHelmChart(chartPath, releaseName, namespace string, valuesYaml string) (*release.Release, error) {
+	releaseName = "nac-" + releaseName
 	// Initialisation du client Helm
 	opt := &helmclient.Options{
 		Namespace:        namespace,
-		RepositoryCache:  "/tmp/.helmcache",
-		RepositoryConfig: "/tmp/.helmrepo",
+		RepositoryCache:  config.NacTmpDir + ".helmcache",
+		RepositoryConfig: config.NacTmpDir + ".helmrepo",
 		Debug:            true,
 	}
 	client, err := helmclient.New(opt)

@@ -14,9 +14,7 @@ func main() {
 	controllerHelm := controllers.NewControllerHelm(controllerGit)
 	controllerGit.SetHelmController(controllerHelm)
 
-	// Ajout des dépôts à surveiller dans GitLab
-
-	// Démarrer la surveillance des dépôts GitLab
+	// Démarrer la surveillance des dépôts Git
 	go controllerGit.StartWatching(30 * time.Second)
 
 	// Création du contrôleur Kube avec une instance de ControllerGit
@@ -27,6 +25,9 @@ func main() {
 
 	// Démarrer la surveillance des ConfigMaps dans Kubernetes (dans le namespace "default")
 	go controllerKube.StartWatching("")
+
+	// Démarrer la suppressions des release helms orphelines
+	go controllerHelm.StartWatching(30 * time.Second)
 
 	// Garder l'application active pour tester
 	select {}

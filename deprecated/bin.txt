@@ -1,5 +1,30 @@
 
+// DeployOrUpdateHelmChart installe ou met à jour un chart Helm local
+func DeployOrUpdateHelmChart(chartPath, releaseName, namespace string, valuesYaml string) (*release.Release, error) {
+	// Initialisation du client Helm
+	opt := &helmclient.Options{
+		Namespace:        namespace,
+		RepositoryCache:  config.NacTmpDir + ".helmcache",
+		RepositoryConfig: config.NacTmpDir + ".helmrepo",
+		Debug:            true,
+	}
+	client, err := helmclient.New(opt)
+	if err != nil {
+		return nil, fmt.Errorf("[utils][helm] erreur lors de l'initialisation du client Helm: %v", err)
+	}
 
+	// Installation ou mise à jour du chart
+	fmt.Println("[utils][helm]🚀 Déploiement du chart...")
+	chartSpec := &helmclient.ChartSpec{
+		ReleaseName: releaseName,
+		ChartName:   chartPath,
+		Namespace:   namespace,
+		ValuesYaml:  valuesYaml,
+		UpgradeCRDs: true,
+	}
+
+	return client.InstallOrUpgradeChart(context.Background(), chartSpec, nil)
+}
 
 func RunControllerKubeTest() {
 	// Créer un ControllerGit pour tester

@@ -1,0 +1,5 @@
+
+main
+    controllerGit.StartWatching
+
+    controllerKube.StartWatching

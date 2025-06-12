@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/Exxog/NoArgoCD/internal/utils"
 	"github.com/Exxog/NoArgoCD/internal/watchers"
 )
@@ -43,7 +44,7 @@ func (c *ControllerGit) RemoveRepository(url, branch string) {
 // NotifyNewCommit est appelé par le watcher lorsqu'un nouveau commit est détecté
 func (c *ControllerGit) NotifyNewCommit(repo watchers.GitRepo, commitID string) {
 	fmt.Printf("[controllers][git] ✨🌐🗂️  Nouveau commit sur %s [%s] : %s\n", repo.URL, repo.Branch, commitID)
-	utils.CloneOrUpdateRepo(repo.URL, "/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", "")
+	utils.CloneOrUpdateRepo(repo.URL, config.NacTmpDir+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", "")
 	c.helmController.InstallHelmChart(repo)
 
 }

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/Exxog/NoArgoCD/internal/getters"
 	"github.com/Exxog/NoArgoCD/internal/utils"
 	"github.com/Exxog/NoArgoCD/internal/watchers"
@@ -108,7 +110,7 @@ func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, name
 	for {
 		// Cloner ou mettre à jour le dépôt
 		fmt.Println("[controller][helm] 📥 Clonage/Mise à jour du dépôt Git...")
-		if err := utils.CloneOrUpdateRepo(repo.URL, "/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", ""); err != nil {
+		if err := utils.CloneOrUpdateRepo(repo.URL, config.NacTmpDir+utils.CleanFolderName(repo.URL+repo.Branch), repo.Branch, "", ""); err != nil {
 			fmt.Printf("[controller][helm] ❌ Erreur lors du clonage/mise à jour du dépôt: %v\n", err)
 			fmt.Println("[controller][helm] ⏳ Tentative après 30 secondes...")
 			//time.Sleep(30 * time.Second)
@@ -117,7 +119,7 @@ func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, name
 
 		// Déployer ou mettre à jour le chart Helm
 		fmt.Println("[controller][helm]🚀 Déploiement du chart Helm...")
-		err := utils.DeployOrUpdateHelmChartViaCmd("/tmp/"+utils.CleanFolderName(repo.URL+repo.Branch)+"/"+chartPath, releaseName, namespace, values)
+		err := utils.DeployOrUpdateHelmChartViaCmd(config.NacTmpDir+utils.CleanFolderName(repo.URL+repo.Branch)+"/"+chartPath, releaseName, namespace, values)
 		if err != nil {
 			fmt.Printf("[controller][helm] ❌ Erreur lors du déploiement du chart: %v\n", err)
 			fmt.Println("[controller][helm] ⏳ Tentative après 30 secondes...")
@@ -154,4 +156,10 @@ func (c *ControllerHelm) InstallHelmChart(repo watchers.GitRepo) {
 // AddRepository ajoute un dépôt GitLab à surveiller
 func (c *ControllerHelm) AddConfigMap(url, branch string) {
 	fmt.Println("pass")
+}
+
+// StartWatching démarre la surveillance des dépôts GitLab à intervalles réguliers
+func (c *ControllerHelm) StartWatching(interval time.Duration) {
+	fmt.Println("[controllers][helm]🔄🌐🗂️ Démarrage de la surveillance des Helms")
+	c.watcher.Watch(interval)
 }

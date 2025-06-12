@@ -97,7 +97,7 @@ func (w *GitWatcher) CheckRepo(repo GitRepo, commitHistory map[string]string) {
 		// Met à jour l'historique des commits
 		commitHistory[repo.URL] = latestCommit
 	} else {
-		log.Println("[watchers][git] ⚠️ Aucun nouveau commit pour ", repo.URL, repo.Branch, " last:", latestCommit, " current:", commitHistory[repo.URL])
+		log.Println("[watchers][git]", repo.URL, repo.Branch, " last:", latestCommit, " current:", commitHistory[repo.URL])
 	}
 }
 
@@ -109,7 +109,6 @@ func (w *GitWatcher) Watch(interval time.Duration) {
 		for _, repo := range w.repositories {
 			w.CheckRepo(repo, commitHistory)
 		}
-		// Attendre l'intervalle spécifié avant la prochaine vérification
 		time.Sleep(interval)
 	}
 }
