@@ -19,7 +19,6 @@ data:
       repoUrl: https://github.com/Exxog/NoArgoCD-private.git
       path: examples/nginx/
       targetRevision: main
-      tokenK8sSecret: noargocd-private
       values:
         test: aabcd
   nginx-chart-app3-private: |

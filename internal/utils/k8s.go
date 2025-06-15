@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,8 +100,16 @@ func GetUsernamePasswordFromSecret(namespace, secretName string) (string, string
 	}
 	if val, ok := secretData["password"]; ok {
 		password = string(val)
-		log.Printf("Password found in secret: %s\n", password)
+		log.Printf("Password found in secret: %s\n", MaskPassword(password))
 	}
 
 	return username, password, nil
+}
+
+func MaskPassword(password string) string {
+	n := len(password)
+	if n > 1 {
+		return strings.Repeat("x", n-1) + password[n-1:]
+	}
+	return strings.Repeat("x", n)
 }
