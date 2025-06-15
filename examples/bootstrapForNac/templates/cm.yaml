@@ -6,7 +6,7 @@ metadata:
   labels:
     nac: "true"
 data:
-  nginx-chart-app1: |
+  nginx-chart-app1-public: |
     helm:
       repoUrl: https://github.com/Exxog/NoArgoCD.git
       path: examples/nginx/
@@ -22,7 +22,7 @@ data:
       tokenK8sSecret: noargocd-private
       values:
         test: aab
-  nginx-chart-app3: |
+  nginx-chart-app3-private: |
     helm:
       repoUrl: https://github.com/Exxog/NoArgoCD-private.git
       path: examples/nginx/
