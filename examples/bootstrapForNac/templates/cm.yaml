@@ -21,7 +21,7 @@ data:
       targetRevision: main
       tokenK8sSecret: noargocd-private
       values:
-        test: aab
+        test: aabcd
   nginx-chart-app3-private: |
     helm:
       repoUrl: https://github.com/Exxog/NoArgoCD-private.git
