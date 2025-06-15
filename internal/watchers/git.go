@@ -5,31 +5,33 @@ import (
 	"log"
 	"time"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/Exxog/NoArgoCD/internal/utils"
 )
 
 // gitRepo représente un dépôt git à surveiller
 type GitRepo struct {
-	URL    string
-	Branch string
+	URL            string
+	Branch         string
+	AuthSecretName string
 }
 
 // Watcher interface pour gérer la détection de nouveaux commits
-type Watcher interface {
+type GitController interface {
 	NotifyNewCommit(repo GitRepo, commitID string)
 }
 
 // gitWatcher surveille les commits sur des dépôts git
 type GitWatcher struct {
-	controller      Watcher
+	gitController   GitController
 	repositories    []GitRepo
 	repositoriesMap map[string]struct{}
 }
 
 // NewgitWatcher crée un watcher attaché à un contrôleur et un client git
-func NewGitWatcher(controller Watcher) *GitWatcher {
+func NewGitWatcher(gitController GitController) *GitWatcher {
 	return &GitWatcher{
-		controller:      controller,
+		gitController:   gitController,
 		repositoriesMap: make(map[string]struct{}),
 	}
 }
@@ -78,36 +80,39 @@ func (w *GitWatcher) RemoveRepository(repo GitRepo) {
 func (w *GitWatcher) NotifyNewCommit(repo GitRepo, commit string) {
 	// Implémente la logique pour notifier d'un nouveau commit, par exemple un log ou un appel à une API
 	log.Printf("[watchers][git] Nouveau commit détecté dans le dépôt %s (branche: %s): %s\n", repo.URL, repo.Branch, commit)
-	w.controller.NotifyNewCommit(repo, commit)
+	w.gitController.NotifyNewCommit(repo, commit)
 
 }
 
-func (w *GitWatcher) CheckRepo(repo GitRepo, commitHistory map[string]string) {
+func (w *GitWatcher) CheckRepo(repo GitRepo, commitHistory map[string]string, secretsNames map[string][]string) {
 	// Récupérer le dernier commit du dépôt distant
-	latestCommit, err := utils.GetLatestCommit(repo.URL, repo.Branch)
+	user, token, _ := utils.GetUsernamePasswordFromSecret(config.Namespace, repo.AuthSecretName)
+	latestCommit, err := utils.GetLatestCommit(repo.URL, repo.Branch, user, token)
 	if err != nil {
 		log.Printf("[watchers][git] ❌ Erreur lors de la récupération du dernier commit %s [%s]: %v\n", repo.URL, repo.Branch, err)
 		return
 	}
 
 	// Vérifier si le commit a changé
-	if commitHistory[repo.URL] != latestCommit {
+	if commitHistory[repo.URL+"-"+repo.Branch] != latestCommit {
 		// Si un nouveau commit est trouvé, notifie
 		w.NotifyNewCommit(repo, latestCommit)
 		// Met à jour l'historique des commits
-		commitHistory[repo.URL] = latestCommit
+		commitHistory[repo.URL+"-"+repo.Branch] = latestCommit
 	} else {
-		log.Println("[watchers][git]", repo.URL, repo.Branch, " last:", latestCommit, " current:", commitHistory[repo.URL])
+		log.Println("[watchers][git]", repo.URL, repo.Branch, " last:", latestCommit, " current:", commitHistory[repo.URL+"-"+repo.Branch], " Pas de nouveau commit.")
 	}
+
 }
 
 func (w *GitWatcher) WatchRepo(interval time.Duration) {
 	commitHistory := make(map[string]string)
+	secretsNames := make(map[string][]string)
 
 	// Lancer la surveillance des dépôts à intervalles réguliers
 	for {
 		for _, repo := range w.repositories {
-			w.CheckRepo(repo, commitHistory)
+			w.CheckRepo(repo, commitHistory, secretsNames)
 		}
 		time.Sleep(interval)
 	}

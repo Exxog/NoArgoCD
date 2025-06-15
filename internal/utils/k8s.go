@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	v1 "k8s.io/api/core/v1"
@@ -67,4 +68,39 @@ func GetNamespace(namespace string) string {
 	}
 	// Si le namespace n'est pas vide, retourner sa valeur
 	return namespace
+}
+
+func GetAuthSecret(namespace string, secretName string) (map[string][]byte, error) {
+	clientset, err := SetupKubernetesClient()
+	if err != nil {
+		return nil, fmt.Errorf("❌ Erreur lors de la configuration du client Kubernetes: %v", err)
+	}
+
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("❌ Erreur lors de la récupération du secret %s dans le namespace %s: %v", secretName, namespace, err)
+	}
+
+	return secret.Data, nil
+}
+
+func GetUsernamePasswordFromSecret(namespace, secretName string) (string, string, error) {
+	secretData, err := GetAuthSecret(namespace, secretName)
+	if err != nil {
+		return "", "", err
+	}
+
+	username := ""
+	password := ""
+
+	if val, ok := secretData["username"]; ok {
+		username = string(val)
+		log.Printf("Username found in secret: %s\n", username)
+	}
+	if val, ok := secretData["password"]; ok {
+		password = string(val)
+		log.Printf("Password found in secret: %s\n", password)
+	}
+
+	return username, password, nil
 }

@@ -15,11 +15,18 @@ data:
       values:
         test: nope
   nginx-chart-app2: |
-    helm:
+    helm-disabled:
       repoUrl: https://github.com/Exxog/NoArgoCD-private.git
       path: examples/nginx/
       targetRevision: main
       tokenK8sSecret: noargocd-private
       values:
         test: aab
-  
+  nginx-chart-app3: |
+    helm:
+      repoUrl: https://github.com/Exxog/NoArgoCD-private.git
+      path: examples/nginx/
+      targetRevision: main
+      authSecretName: noargocd-private
+      values:
+        test: app3  

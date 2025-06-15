@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Exxog/NoArgoCD/internal/config"
 	"github.com/Exxog/NoArgoCD/internal/utils"
 	"github.com/Exxog/NoArgoCD/internal/watchers"
 )
@@ -29,8 +30,7 @@ func (c *ControllerGit) SetHelmController(helmController *ControllerHelm) {
 }
 
 // AddRepository ajoute un dépôt GitLab à surveiller
-func (c *ControllerGit) AddRepository(url, branch string) {
-	repo := watchers.GitRepo{URL: url, Branch: branch}
+func (c *ControllerGit) AddRepository(repo watchers.GitRepo) {
 	c.watcher.AddRepository(repo)
 
 }
@@ -43,7 +43,9 @@ func (c *ControllerGit) RemoveRepository(url, branch string) {
 // NotifyNewCommit est appelé par le watcher lorsqu'un nouveau commit est détecté
 func (c *ControllerGit) NotifyNewCommit(repo watchers.GitRepo, commitID string) {
 	fmt.Printf("[controllers][git] ✨🌐🗂️  Nouveau commit sur %s [%s] : %s\n", repo.URL, repo.Branch, commitID)
-	utils.CloneOrUpdateRepo(repo.URL, utils.DestClonePath(repo.URL, repo.Branch), repo.Branch, "", "")
+	//toDo recuperer secret
+	username, password, _ := utils.GetUsernamePasswordFromSecret(config.Namespace, repo.AuthSecretName)
+	utils.CloneOrUpdateRepo(repo.URL, utils.DestClonePath(repo.URL, repo.Branch), repo.Branch, username, password)
 	c.helmController.InstallHelmChart(repo)
 
 }

@@ -97,18 +97,25 @@ func DestClonePath(repoURL, branch string) string {
 	return config.NacTmpDir + "git/" + repoName
 }
 
-func GetLatestCommit(repoURL, branch string) (string, error) {
-	// Créer un objet de stockage en mémoire (sans disque)
+func GetLatestCommit(repoURL, branch, user, token string) (string, error) {
 	storer := memory.NewStorage()
 
-	// Cloner le dépôt en mémoire
-	_, err := git.Clone(storer, nil, &git.CloneOptions{
+	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 		Depth:         1, // Ne récupérer que le dernier commit
 		NoCheckout:    true,
-	})
+	}
+	if user != "" && token != "" {
+		cloneOptions.Auth = &http.BasicAuth{
+			Username: user,
+			Password: token,
+		}
+	}
+
+	// Cloner le dépôt en mémoire
+	_, err := git.Clone(storer, nil, cloneOptions)
 	if err != nil {
 		return "", fmt.Errorf("erreur lors du clonage du dépôt : %w", err)
 	}

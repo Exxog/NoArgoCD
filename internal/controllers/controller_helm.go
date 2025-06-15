@@ -32,13 +32,10 @@ type ControllerHelm struct {
 
 // NewControllerGit crée un nouveau contrôleur GitLab avec un watcher et un client
 func NewControllerHelm(gitController *ControllerGit) *ControllerHelm {
-
-	HelmWatcher := watchers.NewHelmWatcher()
-
 	controller := &ControllerHelm{
-		watcher:       HelmWatcher,
 		gitController: gitController,
 	}
+	controller.watcher = watchers.NewHelmWatcher(controller)
 	return controller
 }
 func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any, releaseName string) {
@@ -54,6 +51,7 @@ func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any, releaseName 
 	repoURL, _ := helmData["repoUrl"].(string)
 	targetRevision, _ := helmData["targetRevision"].(string)
 	chartPath, _ := helmData["path"].(string)
+	authSecretName, _ := helmData["authSecretName"].(string)
 	//values, _ := helmData["values"].(string)
 	values := utils.ConvertToYaml(helmData)
 
@@ -62,8 +60,8 @@ func (c *ControllerHelm) DetectHelmChartFromCM(helm map[string]any, releaseName 
 	//values = utils.ConvertToYaml(helm["helm"].(map[interface{}]interface{}))
 
 	fmt.Println("DETECTION!!! ", helm)
-	c.gitController.AddRepository(repoURL, targetRevision)
-	installHelmChartFromGit(watchers.GitRepo{URL: repoURL, Branch: targetRevision}, chartPath, releaseName, config.Namespace, values)
+	c.gitController.AddRepository(watchers.GitRepo{URL: repoURL, Branch: targetRevision, AuthSecretName: authSecretName})
+	installHelmChartFromGit(watchers.GitRepo{URL: repoURL, Branch: targetRevision, AuthSecretName: authSecretName}, chartPath, releaseName, config.Namespace, values)
 }
 
 func (c *ControllerHelm) DeleteHelmChartFromCM(helm map[string]any, releaseName string) {
@@ -88,19 +86,26 @@ func (c *ControllerHelm) DeleteHelmChartFromCM(helm map[string]any, releaseName 
 		namespace = config.Namespace
 	}
 
+	c.Remove(namespace, repoURL, targetRevision, releaseName)
+
+}
+func (c *ControllerHelm) Remove(namespace, repoURL, targetRevision, releaseName string) {
 	if len(getters.GetHelm(repoURL, targetRevision, namespace)) == 0 {
-		//TODOdelete cacheRepo et dependances
-		cachePath := filepath.Join(os.Getenv("HOME"), ".cache", "helm", "archives", releaseName+"-*.tgz")
-
-		// Trouver et supprimer les fichiers
-		files, _ := filepath.Glob(cachePath)
-		for _, file := range files {
-			os.Remove(file)
-		}
-
+		removeCacheHelm(releaseName)
 		c.gitController.RemoveRepository(repoURL, targetRevision)
 	}
 	utils.DeleteHelmRelease(releaseName, namespace)
+}
+
+func removeCacheHelm(releaseName string) {
+	//TODOdelete cacheRepo et dependances
+	cachePath := filepath.Join(os.Getenv("HOME"), ".cache", "helm", "archives", releaseName+"-*.tgz")
+
+	// Trouver et supprimer les fichiers
+	files, _ := filepath.Glob(cachePath)
+	for _, file := range files {
+		os.Remove(file)
+	}
 }
 
 func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, namespace string, values []byte) {
@@ -110,7 +115,8 @@ func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, name
 	for {
 		// Cloner ou mettre à jour le dépôt
 		fmt.Println("[controller][helm] 📥 Clonage/Mise à jour du dépôt Git...")
-		if err := utils.CloneOrUpdateRepo(repo.URL, utils.DestClonePath(repo.URL, repo.Branch), repo.Branch, "", ""); err != nil {
+		username, password, _ := utils.GetUsernamePasswordFromSecret(config.Namespace, repo.AuthSecretName)
+		if err := utils.CloneOrUpdateRepo(repo.URL, utils.DestClonePath(repo.URL, repo.Branch), repo.Branch, username, password); err != nil {
 			fmt.Printf("[controller][helm] ❌ Erreur lors du clonage/mise à jour du dépôt: %v\n", err)
 			fmt.Println("[controller][helm] ⏳ Tentative après 30 secondes...")
 			//time.Sleep(30 * time.Second)
