@@ -134,7 +134,7 @@ func installHelmChartFromGit(repo watchers.GitRepo, chartPath, releaseName, name
 		}
 
 		fmt.Println("[controller][helm] \033[32mDéploiement réussi!\033[0m")
-		break // Sortir de la boucle si tout est OK
+		break
 	}
 }
 
@@ -144,17 +144,27 @@ func (c *ControllerHelm) InstallHelmChart(repo watchers.GitRepo) {
 
 	for key, charts := range helmCharts {
 		for _, chart := range charts {
-			if repoURL, ok := chart["repoUrl"].(string); ok {
-
-				fmt.Printf("[controller][helm] 🔹 Clé: %s, Repo URL: %s\n", key, repoURL)
-				yamlData := utils.ConvertToYaml(chart)
-
-				installHelmChartFromGit(repo, chart["path"].(string), key, config.Namespace, yamlData)
-
+			switch {
+			case chart["repoUrl"] != nil:
+				// Chart depuis un repo Git
+				if repoURL, ok := chart["repoUrl"].(string); ok {
+					fmt.Printf("[controller][helm] 🔹 Clé: %s, Repo URL: %s\n", key, repoURL)
+					yamlData := utils.ConvertToYaml(chart)
+					installHelmChartFromGit(repo, chart["path"].(string), key, config.Namespace, yamlData)
+				}
+			case chart["oci"] != nil:
+				// Chart depuis un repo Helm distant (OCI ou repo add)
+				if chartName, ok := chart["oci"].(string); ok {
+					fmt.Printf("[controller][helm] 🔹 Clé: %s, oci: %s\n", key, chartName)
+					yamlData := utils.ConvertToYaml(chart)
+					// Appelle ici ta fonction d'installation pour les charts distants
+					utils.InstallHelmChartFromOCI(chartName, key, config.Namespace, yamlData)
+				}
+			default:
+				fmt.Printf("[controller][helm] ⚠️ Clé %s : type de chart non reconnu\n", key)
 			}
 		}
 	}
-
 }
 
 //faire un retry si helm marche pas ?

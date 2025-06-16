@@ -65,3 +65,8 @@ Ce projet est sous licence Apache 2.0.
 
 
 kubectl create secret generic noargocd-private --from-literal=username=Exxog --from-literal=password=github_pat_xxxxxxx --type=Opaque
+
+
+
+// to do suppression des git et cache si cm plus present 
+// mettre cache sur recuperation secret

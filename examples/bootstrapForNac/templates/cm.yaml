@@ -29,3 +29,12 @@ data:
       authSecretName: noargocd-private
       values:
         test: app3  
+  nginx-chart-victoria: |
+    helm:
+      oci: oci://ghcr.io/victoriametrics/helm-charts/victoria-metrics-cluster
+      #chartVersion: ""         # Optionnel, ex: "0.9.1"
+      values:
+        server:
+          extraArgs:
+            - "--retentionPeriod=2"
+      #namespace: monitoring 

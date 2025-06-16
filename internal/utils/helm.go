@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/Exxog/NoArgoCD/internal/config"
@@ -14,6 +15,39 @@ import (
 	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/release"
 )
+
+func InstallHelmChartFromOCI(chartName, releaseName, namespace string, values []byte) {
+	// Namespace par défaut
+	namespace = GetNamespace(namespace)
+
+	// Chemin temporaire pour le fichier values.yaml
+	valuesFilePath := filepath.Join(config.NacTmpDir, "values-"+releaseName+".yaml")
+
+	// Écrire les valeurs dans un fichier temporaire
+	if err := WriteYAMLToFile(valuesFilePath, values); err != nil {
+		fmt.Printf("[utils][helm] ❌ Erreur lors de l'écriture des valeurs dans le fichier: %v\n", err)
+		return
+	}
+
+	// Commande Helm pour installer le chart depuis OCI
+	cmd := fmt.Sprintf("helm install %s %s -f %s -n %s --debug --dry-run", releaseName, chartName, valuesFilePath, namespace)
+	fmt.Println("[utils][helm] 📦 Exécution de la commande:", cmd)
+
+	if err := RunCommand(cmd); err != nil {
+		fmt.Printf("[utils][helm] ❌ Erreur lors de l'installation du chart Helm: %v\n", err)
+		return
+	}
+
+	fmt.Println("[utils][helm] ✅ Installation du chart Helm oci réussie!")
+}
+
+func RunCommand(cmdStr string) error {
+	parts := strings.Fields(cmdStr)
+	execCmd := exec.Command(parts[0], parts[1:]...)
+	execCmd.Stdout = os.Stdout
+	execCmd.Stderr = os.Stderr
+	return execCmd.Run()
+}
 
 func DeployOrUpdateHelmChartViaCmd(chartPath, releaseName, namespace string, valuesYamlContent []byte) error {
 	releaseName = "nac-" + releaseName
